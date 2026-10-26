@@ -7,7 +7,8 @@ averaged by the type in exposures/fc_list.csv, plotted as a cumulative sum from
     uv run python scripts/plot_common_fret.py
     uv run python scripts/plot_common_fret.py --universes blf --start 2026-04-01
 
-Each PNG is rendered at its size on the slide (default 24.8 x 7.4 cm, half of a
+By default both the USD return (ret) and the specific return (sret, files with
+a _sret suffix) versions are written. Each PNG is rendered at its size on the slide (default 24.8 x 7.4 cm, half of a
 4:3 template slide; 300 dpi). Also writes the daily factor and type returns as CSV.
 """
 
@@ -42,6 +43,13 @@ def main() -> None:
     )
     parser.add_argument("--no-highlight", action="store_true")
     parser.add_argument(
+        "--returns",
+        nargs="+",
+        choices=["ret", "sret"],
+        default=["ret", "sret"],
+        help="ret = USD return, sret = specific return (files get a _sret suffix)",
+    )
+    parser.add_argument(
         "--size-cm",
         nargs=2,
         type=float,
@@ -62,19 +70,21 @@ def main() -> None:
     colors = common_fret.type_colors(list(all_types))
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    for u in args.universes:
-        daily = common_fret.factor_returns(u, args.start, end)
+    for u, ret_col in [(u, r) for u in args.universes for r in args.returns]:
+        daily = common_fret.factor_returns(u, args.start, end, ret_col=ret_col)
         by_type = common_fret.type_returns(daily, u)
         fig = common_fret.plot_cumulative(
             by_type,
             start=args.start,
             highlight=highlight,
-            title=common_fret.UNIVERSES[u],
+            title=common_fret.UNIVERSES[u]
+            + (" (Specific Return)" if ret_col == "sret" else ""),
             colors=colors,
             size_cm=tuple(args.size_cm),
             fontsize=args.fontsize,
         )
-        stem = args.out_dir / f"common_fret_{u}_{args.start.replace('-', '')}"
+        suffix = "_sret" if ret_col == "sret" else ""
+        stem = args.out_dir / f"common_fret_{u}_{args.start.replace('-', '')}{suffix}"
         fig.savefig(f"{stem}.png")
         daily.to_csv(f"{stem}_factors.csv", index_label="date")
         by_type.to_csv(f"{stem}_types.csv", index_label="date")

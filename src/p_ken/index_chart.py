@@ -85,6 +85,19 @@ def _use_japanese_font() -> None:
 _use_japanese_font()
 
 
+class PercentTicks(mticker.Formatter):
+    """Percent tick labels with just enough decimals for the tick spacing."""
+
+    def __call__(self, x, pos=None):
+        locs = np.asarray(self.locs)
+        step = np.diff(np.sort(locs)).min() if len(locs) > 1 else 1.0
+        decimals = max(0, int(np.ceil(-np.log10(step * 100) - 1e-9)))
+        v = x * 100
+        if abs(v) < 0.5 * 10**-decimals:
+            v = 0.0  # no "-0%"
+        return f"{v:.{decimals}f}%".replace("-", "−")
+
+
 def load_series(
     key: str, variant: str = "close", index_dir: Path = INDEX_DIR
 ) -> pd.Series:

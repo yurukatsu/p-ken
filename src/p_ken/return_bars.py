@@ -15,10 +15,9 @@ import pandas as pd
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from matplotlib.ticker import FuncFormatter
 
 from p_ken import index_chart
-from p_ken.index_chart import CM, GRID, INK, INK_MUTED, NEGATIVE, POSITIVE
+from p_ken.index_chart import CM, GRID, INK, INK_MUTED, NEGATIVE, POSITIVE, PercentTicks
 
 INDEX_DIR = Path("data/index_return")
 GROUP_FILES = {
@@ -164,7 +163,7 @@ def plot_period_bars(
     pad = (hi - lo) * 0.05
     ax.set_xlim(lo - pad, hi + pad)
     ax.set_ylim(-0.6, n - 0.4)
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0%}"))
+    ax.xaxis.set_major_formatter(PercentTicks())
     ax.grid(axis="x", color=GRID, lw=0.5, zorder=0)
     for side in ("right", "top", "left"):
         ax.spines[side].set_visible(False)

@@ -8,6 +8,7 @@ Method (follows fret_em_daily / exp_em):
      |ret| >= 100 %, re-rank each factor's score within the day's sample the
      same way, and regress the return on it (one factor at a time, with an
      intercept). The slope is that factor's return for the day.
+     With ret_col="sret" the specific return is used instead of the return.
   3. type return = equal-weight mean of its factors' returns (fc_list.csv).
 
     from p_ken import common_fret
@@ -39,6 +40,7 @@ from p_ken.index_chart import (
     NEGATIVE,
     POSITIVE,
     SLIDE_UPPER_HALF_CM,
+    PercentTicks,
 )
 
 DATA_ROOT = Path("data")
@@ -102,11 +104,13 @@ def factor_returns(
     start: str = "2026-01-01",
     end: str | None = None,
     factors: list[str] | None = None,
+    ret_col: str = "ret",
     verbose: bool = False,
 ) -> pd.DataFrame:
     """Daily factor returns (index = date, columns = factors), decimals.
 
     factors: default = every fc_list factor present in the core files.
+    ret_col: "ret" (USD return) or "sret" (specific return) as the regressand.
     Months without exposures or returns are skipped.
     """
     data_dir = DATA_ROOT / universe
@@ -125,15 +129,15 @@ def factor_returns(
             if verbose:
                 print(f"skip {ym}: no exposures/returns")
             continue
-        rtn = rtn[rtn.bid.isin(exp.index)].dropna(subset=["ret"])
-        rtn = rtn[rtn.ret.abs() < MAX_ABS_RET]
+        rtn = rtn[rtn.bid.isin(exp.index)].dropna(subset=[ret_col])
+        rtn = rtn[rtn[ret_col].abs() < MAX_ABS_RET]
         for ymd, day in rtn.groupby("ymd"):
             d = pd.Timestamp(ymd)
             if d < start_ts or (end_ts is not None and d > end_ts):
                 continue
             day = day.drop_duplicates("bid")
             s = blom(exp.loc[day.bid])
-            slopes = _day_slopes(s, day.ret.to_numpy(float) / 100)
+            slopes = _day_slopes(s, day[ret_col].to_numpy(float) / 100)
             rows.append(pd.Series(slopes, index=s.columns, name=d))
         if verbose:
             print(f"done {ym} (n={len(exp)})")
@@ -249,7 +253,7 @@ def plot_cumulative(
     )
     ax.xaxis.set_major_locator(mticker.FixedLocator(mdates.date2num(months)))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y/%m"))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0%}"))
+    ax.yaxis.set_major_formatter(PercentTicks())
     ax.grid(axis="y", color=GRID, lw=0.6)
     ax.set_axisbelow(True)
     for side in ("top", "right"):
