@@ -47,6 +47,12 @@ uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-07-01
 # markers = month-end cumulative returns; quarter-slide size (12.2 x 7.4 cm)
 # -> output/figures/period_returns_<group>_<start>_<end>.png / .csv  (library: p_ken.return_bars)
 uv run python scripts/plot_period_returns.py --start 2026-07-01 --end 2026-09-30
+
+# Common factor returns by fc_list type (core exposures, daily one-factor regression on
+# Blom scores, type = mean of its factors) for MSCI EM (data/gemq) and RGA (data/blf):
+# cumulative sum from 0, highlight period in full colour  (library: p_ken.common_fret)
+# -> output/figures/common_fret_<universe>_<start>.png / _factors.csv / _types.csv
+uv run python scripts/plot_common_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30
 ```
 
 Outputs:
