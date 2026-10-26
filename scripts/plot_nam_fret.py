@@ -1,4 +1,4 @@
-"""NAM factor returns (AI, TVL, RVL, ai70_bd30) on the RGA universe.
+"""NAM factor returns: RGA (AI, TVL, RVL, ai70_bd30) and MSCI EM (AI, Revision, GEMQ3).
 
 Daily one-factor regression slopes on the daily NAM scores (see p_ken.nam_fret),
 plotted as a cumulative sum from 0 with the highlight period in full colour,
@@ -38,6 +38,13 @@ def main() -> None:
         "--returns", nargs="+", choices=["ret", "sret"], default=["ret", "sret"]
     )
     parser.add_argument(
+        "--universes",
+        nargs="+",
+        choices=list(nam_fret.UNIVERSES),
+        default=list(nam_fret.UNIVERSES),
+        help="blf = RGA (daily scores), gemq = MSCI EM (month-end scores)",
+    )
+    parser.add_argument(
         "--size-cm",
         nargs=2,
         type=float,
@@ -51,19 +58,20 @@ def main() -> None:
     highlight = None if args.no_highlight else tuple(args.highlight)
     end = args.end or (highlight[1] if highlight else None)
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    for ret_col in args.returns:
-        daily = nam_fret.factor_returns(args.start, end, ret_col=ret_col)
+    for u, ret_col in [(u, r) for u in args.universes for r in args.returns]:
+        daily = nam_fret.factor_returns(u, args.start, end, ret_col=ret_col)
         fig = common_fret.plot_cumulative(
             daily,
             start=args.start,
             highlight=highlight,
-            title="RGA Universe" + (" (Specific Return)" if ret_col == "sret" else ""),
-            colors=nam_fret.COLORS,
+            title=nam_fret.UNIVERSES[u]
+            + (" (Specific Return)" if ret_col == "sret" else ""),
+            colors=nam_fret.COLORS[u],
             size_cm=tuple(args.size_cm),
             fontsize=args.fontsize,
         )
         suffix = "_sret" if ret_col == "sret" else ""
-        stem = args.out_dir / f"nam_fret_blf_{args.start.replace('-', '')}{suffix}"
+        stem = args.out_dir / f"nam_fret_{u}_{args.start.replace('-', '')}{suffix}"
         fig.savefig(f"{stem}.png")
         daily.to_csv(f"{stem}.csv", index_label="date")
         print(f"Saved: {stem}.png / .csv")
