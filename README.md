@@ -65,7 +65,7 @@ uv run python scripts/plot_nam_fret.py --start 2026-01-01 --highlight 2026-07-01
 # Stock treemaps (MSCI EM / RGA): area = 9/30 weight, colour = USD return 6/30-9/30 from LSEG
 # (SEDOL -> RIC / HQ country / GICS sector, TR.PriceClose(Curn=USD); as in ../datastream)
 uv run scripts/fetch_stock_returns.py [--start 2026-07-01 --end 2026-09-30] [--env-file ../datastream/.env]
-uv run python scripts/plot_treemap.py [--group country|sector] [--clip 0.2]
+uv run python scripts/plot_treemap.py [--group country|sector] [--clip 0.2]   # whole slide: 24.8 x 15.0 cm, 8pt
 # -> data/index_return/stocks_<universe>_<start>_<end>.csv, output/figures/treemap_<universe>_<group>_<period>.png
 ```
 

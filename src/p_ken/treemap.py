@@ -30,10 +30,12 @@ from p_ken.index_chart import (
     INK_MUTED,
     NEGATIVE,
     POSITIVE,
-    SLIDE_UPPER_HALF_CM,
 )
 
 INDEX_DIR = Path("data/index_return")
+# Whole content area of a 4:3 template slide: 24.8 cm wide (1.36 cm margins),
+# from 2.8 cm below the title to just above the page number (~17.8 cm).
+SLIDE_FULL_CM = (24.8, 15.0)
 SURFACE = "#ffffff"
 NA_FILL = "#d6d6d1"
 MID = "#f0efec"  # diverging midpoint (neutral grey)
@@ -143,8 +145,8 @@ def plot_treemap(
     title: str | None = None,
     subtitle: str | None = None,
     clip: float = 0.2,
-    size_cm: tuple[float, float] = SLIDE_UPPER_HALF_CM,
-    fontsize: float = 7,
+    size_cm: tuple[float, float] = SLIDE_FULL_CM,
+    fontsize: float = 8,
     dpi: int = 300,
 ) -> plt.Figure:
     """Treemap grouped by `group` ("country" or "sector"); area = weight, colour = return."""

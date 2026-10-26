@@ -7,7 +7,8 @@ scripts/fetch_stock_returns.py (weights + LSEG returns). Run from the p-ken root
     uv run python scripts/plot_treemap.py
     uv run python scripts/plot_treemap.py --group sector --clip 0.3
 
-Each PNG is rendered at its size on the slide (default 24.8 x 7.4 cm; 300 dpi).
+Each PNG is rendered at its size on the slide (default 24.8 x 15.0 cm: a whole
+content slide of the 4:3 template; 300 dpi), so paste it unscaled.
 """
 
 import argparse
@@ -36,9 +37,9 @@ def main() -> None:
         nargs=2,
         type=float,
         metavar=("W", "H"),
-        default=list(treemap.SLIDE_UPPER_HALF_CM),
+        default=list(treemap.SLIDE_FULL_CM),
     )
-    parser.add_argument("--fontsize", type=float, default=7, help="pt on the slide")
+    parser.add_argument("--fontsize", type=float, default=8, help="pt on the slide")
     parser.add_argument("--out-dir", type=Path, default=Path("output/figures"))
     args = parser.parse_args()
 
