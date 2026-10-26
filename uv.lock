@@ -612,6 +612,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "scipy" },
+    { name = "squarify" },
 ]
 
 [package.dev-dependencies]
@@ -626,6 +627,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.5.4" },
     { name = "pandas", specifier = ">=3.1.0" },
     { name = "scipy", specifier = ">=1.18.1" },
+    { name = "squarify", specifier = ">=0.4.5" },
 ]
 
 [package.metadata.requires-dev]
@@ -1027,6 +1029,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "squarify"
+version = "0.4.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/33/26dbf6025af9c5289519f9ac20b82b3e8cff1eb570af4d055b6f0fd31bdd/squarify-0.4.5.tar.gz", hash = "sha256:733c9ef74cee369a83d61a050aea0812f182f0216d9b2bde76691c87443f6883", size = 5549, upload-time = "2026-09-11T02:30:04.65Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/cf/d4d904419659d7e971f02b80690437f846c308b0ddd0a16c9a38fec4457e/squarify-0.4.5-py3-none-any.whl", hash = "sha256:2689b426eccf4c5aefc28c7fc5363a9e671c0391a17d86c50de8f6ea739606f3", size = 4147, upload-time = "2026-09-11T02:30:03.877Z" },
 ]
 
 [[package]]

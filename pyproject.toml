@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=2.5.4",
     "pandas>=3.1.0",
     "scipy>=1.18.1",
+    "squarify>=0.4.5",
 ]
 
 [project.scripts]
