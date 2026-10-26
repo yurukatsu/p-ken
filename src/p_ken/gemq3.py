@@ -84,15 +84,15 @@ def build_all(
     out_dir: Path | None = None,
 ) -> list[str]:
     """Build GEMQ3 for every month that has universe, AI, revision and QIP data."""
-    out_dir = out_dir or data_dir / "scores" / "gemq3"
+    out_dir = out_dir or data_dir / "exposures" / "nam" / "gemq3"
     out_dir.mkdir(parents=True, exist_ok=True)
     have = (
-        set(io.list_yms("scores/ai", data_dir))
-        & set(io.list_yms("scores/revision", data_dir))
-        & set(io.list_yms("scores/qip", data_dir))
+        set(io.list_yms("exposures/nam/ai", data_dir))
+        & set(io.list_yms("exposures/nam/revision", data_dir))
+        & set(io.list_yms("exposures/nam/qip", data_dir))
     )
     done = []
-    for ym in io.list_yms("unv", data_dir):
+    for ym in io.list_yms("universe", data_dir):
         if ym not in have or io.load_unv(ym, data_dir).empty:
             continue
         build_gemq3(ym, qip_na_rm, data_dir).to_csv(out_dir / f"{ym}.csv", index=False)

@@ -13,3 +13,4 @@ wheels/
 archive/
 data/
 notebooks/
+*.zip
