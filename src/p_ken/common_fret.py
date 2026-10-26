@@ -200,6 +200,7 @@ def plot_cumulative(
     size_cm: tuple[float, float] = SLIDE_UPPER_HALF_CM,
     fontsize: float = 8,
     dpi: int = 300,
+    ylabel: str = "Factor Return (cumulative sum)",
 ) -> plt.Figure:
     """Cumulative sum of daily returns from 0, highlight period in full colour.
 
@@ -262,7 +263,7 @@ def plot_cumulative(
         ax.spines[side].set_color(GRID)
     small = fontsize - 1
     ax.tick_params(colors=INK_MUTED, labelsize=small, length=2, pad=2)
-    ax.set_ylabel("Factor Return (cumulative sum)", color=INK_MUTED, fontsize=small)
+    ax.set_ylabel(ylabel, color=INK_MUTED, fontsize=small)
     if title:
         ax.set_title(title, loc="left", fontsize=fontsize, color=INK, pad=4)
 

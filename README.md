@@ -57,7 +57,9 @@ uv run python scripts/plot_common_fret.py --start 2026-01-01 --highlight 2026-07
 # NAM factor returns, same method / chart style:
 #   RGA (data/blf): AI, TVL, RVL, ai70_bd30 from the daily score files (latest before each date)
 #   MSCI EM (data/gemq): AI, Revision, GEMQ3 from the month-end files (paired with rtn/{ym})
-# -> output/figures/nam_fret_{blf,gemq}_<start>[_sret].png / .csv  (library: p_ken.nam_fret)
+#   two definitions (--methods): regression slope, and q5 = top-quintile mean excess return
+#   (RGA: archive BLF.fret_nam_daily, CN=False; MSCI EM: R fret_nam_monitor)
+# -> output/figures/nam_fret_{blf,gemq}_<start>[_q5][_sret].png / .csv  (library: p_ken.nam_fret)
 uv run python scripts/plot_nam_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30
 ```
 

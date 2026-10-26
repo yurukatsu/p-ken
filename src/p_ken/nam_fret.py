@@ -153,3 +153,98 @@ def factor_returns(
     if not rows:
         raise ValueError(f"no NAM factor returns for {universe} from {start}")
     return pd.DataFrame(rows).sort_index()
+
+
+# --- Q5 excess return version (em-market-weekly / archive BLF.fret_nam_daily) --
+
+
+def _q5_blf(start: str, end: str | None, ret_col: str, q: int) -> pd.DataFrame:
+    """RGA: archive BLF.fret_nam_daily (CN=False).
+
+    Month-end (last trading day) scores - from the latest files on or before
+    it - are applied to every day from that month end (inclusive) until the
+    next one. Quantiles are taken with qcut over the whole period's
+    days x stocks at once; the factor return is the mean excess return
+    (vs that day's simple average) of the top quantile.
+    """
+    data_dir = DATA_ROOT / "blf"
+    rtn = pd.concat(
+        [io.load_rtn(ym, data_dir) for ym in io.list_yms("rtn", data_dir)],
+        ignore_index=True,
+    ).dropna(subset=[ret_col])
+    days = pd.Series(sorted(rtn.ymd.unique()))
+    month_ends = days.groupby(days.str[:6]).max()
+    lo, hi = (
+        f"{pd.Timestamp(start):%Y%m%d}",
+        f"{pd.Timestamp(end):%Y%m%d}" if end else "99999999",
+    )
+    period = days[(days >= lo) & (days <= hi)]
+
+    def at_month_end(me: str) -> pd.DataFrame:
+        cols = {}
+        for name, (folder, col) in BLF_FACTORS.items():
+            dates = _score_dates(folder)
+            i = bisect.bisect_right(dates, me) - 1  # on or before the month end
+            cols[name] = _scores(folder, dates[i])[col]
+        base = _scores(
+            "ai", _score_dates("ai")[bisect.bisect_right(_score_dates("ai"), me) - 1]
+        )
+        return pd.DataFrame(cols).reindex(base.index)  # universe = AI score file
+
+    frames = []
+    for d in period:
+        me = month_ends[month_ends <= d].max()
+        exp = at_month_end(me).copy()
+        exp["ymd"] = d
+        frames.append(exp.rename_axis("bid").reset_index())
+    panel = pd.concat(frames, ignore_index=True)
+    for f in BLF_FACTORS:
+        try:
+            panel[f] = pd.qcut(panel[f], q, labels=False, duplicates="drop") + 1
+        except (ValueError, IndexError):
+            panel[f] = np.nan
+
+    r = rtn[rtn.ymd.isin(period)][["ymd", "bid", ret_col]].drop_duplicates(
+        ["ymd", "bid"]
+    )
+    r[ret_col] = r[ret_col] - r.groupby("ymd")[ret_col].transform("mean")
+    r = r[r[ret_col].abs() < MAX_ABS_RET].merge(panel, on=["ymd", "bid"], how="left")
+    out = {f: r[r[f] == q].groupby("ymd")[ret_col].mean() / 100 for f in BLF_FACTORS}
+    df = pd.DataFrame(out)
+    df.index = pd.to_datetime(df.index)
+    return df.sort_index()
+
+
+def _q5_gemq(start: str, end: str | None, ret_col: str, q: int) -> pd.DataFrame:
+    """MSCI EM: R fret_nam_monitor - month-end scores, ntile within the universe
+    each month, mean excess return of the top quantile (p_ken.fret quintiles)."""
+    data_dir = DATA_ROOT / "gemq"
+    start_ts = pd.Timestamp(start)
+    res = fret.run(
+        universe=lambda ym: io.load_unv(ym, data_dir),
+        exposures=lambda ym: fret.default_exposures(ym, data_dir),
+        factors=GEMQ_FACTORS,
+        start=io.prev_ym(f"{start_ts:%Y%m}"),
+        returns=lambda ym: io.load_rtn(ym, data_dir),
+        ret_col=ret_col,
+        n_groups=q,
+    )
+    qd = res["quintile_daily"]
+    df = qd[qd.grp == f"Q{q}"].pivot(index="ymd", columns="factor", values="ret")
+    df.index = pd.to_datetime(df.index)
+    df = df[df.index >= start_ts]
+    if end:
+        df = df[df.index <= pd.Timestamp(end)]
+    return df[list(GEMQ_FACTORS)].rename_axis(None, axis=1)
+
+
+def q5_returns(
+    universe: str = "blf",
+    start: str = "2026-01-01",
+    end: str | None = None,
+    ret_col: str = "ret",
+    q: int = 5,
+) -> pd.DataFrame:
+    """Daily top-quantile (Q5) mean excess returns (index = date), decimals."""
+    fn = _q5_blf if universe == "blf" else _q5_gemq
+    return fn(start, end, ret_col, q)
