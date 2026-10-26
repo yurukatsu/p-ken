@@ -172,7 +172,14 @@ def plot_period_bars(
     ax.tick_params(axis="x", colors=INK_MUTED, labelsize=fontsize - 1, length=0, pad=1)
     ax.tick_params(axis="y", colors=INK, labelsize=fontsize, length=0, pad=2)
 
-    base_label = f"{pd.Timestamp(start) - pd.Timedelta(days=1):%-m/%-d}"
+    base_date = close.index[close.index < pd.Timestamp(start)].max()
+    ax.set_title(
+        f"Return (USD basis) vs. {base_date:%-m/%-d}",
+        loc="left",
+        fontsize=fontsize,
+        color=INK,
+        pad=4,
+    )
     handles = [
         Line2D(
             [], [], ls="none", markersize=fontsize * 0.55, markeredgewidth=0.6, **style
@@ -188,10 +195,8 @@ def plot_period_bars(
     ax.legend(
         handles,
         labels,
-        title=f"USD, vs {base_label}",
-        title_fontproperties={"size": fontsize - 1},
         loc="lower right",
-        bbox_to_anchor=(1.0, 1.01),
+        bbox_to_anchor=(1.0, 1.0),
         ncol=len(labels) + 1,
         frameon=False,
         fontsize=fontsize - 1,
@@ -202,8 +207,6 @@ def plot_period_bars(
         borderaxespad=0,
         handler_map={tuple: HandlerTuple(ndivide=None, pad=0)},
     )
-    ax.get_legend().get_title().set_color(INK_MUTED)
-    ax.get_legend()._legend_box.align = "left"
 
     out = table.iloc[::-1].copy()  # top -> bottom as drawn
     out.columns = [f"{c:%Y-%m-%d}" for c in out.columns]
