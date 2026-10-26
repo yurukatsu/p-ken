@@ -32,6 +32,10 @@ Scripts (`scripts/`):
 # Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
 uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
 
+# EM country indices (16; Korea = KOSPI) and MSCI EM sectors (price; --sector-variant net)
+# in USD from LSEG -> data/index_return/{country,em_sector}_{close,return}_usd.csv
+uv run scripts/fetch_em_markets.py [--start 1999-01-01] [--groups country em_sector] [--env-file ../datastream/.env]
+
 # Index chart rebased to 100 at --base, --highlight period drawn darker (red shades),
 # sized for the upper half of a template slide (24.8 x 7.4 cm, 300 dpi; --size-cm to change).
 # MSCI = price index by default (--variant net/gross for total return); labels show the
