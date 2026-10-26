@@ -25,10 +25,12 @@ work and is not tracked.
 Scripts (`scripts/`):
 
 ```sh
-# MSCI EM / ACWI / World daily closing levels (USD; price, net, gross) from LSEG
-# -> data/index_return/msci.csv. Self-contained (PEP 723): uv installs lseg-data itself.
+# MSCI EM / ACWI / World daily closing levels (USD) from LSEG
+# -> data/index_return/msci_{em,acwi,world}.csv
+#    columns: dateymd, close, return (price), net, net_return, gross, gross_return
+# Self-contained (PEP 723): uv installs lseg-data itself.
 # Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
-uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--env-file ../datastream/.env]
+uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
 ```
 
 Outputs:
