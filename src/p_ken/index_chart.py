@@ -18,6 +18,7 @@ from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import pandas as pd
 from matplotlib import font_manager
 
@@ -27,15 +28,16 @@ INDEX_DIR = Path("data/index_return")
 @dataclass(frozen=True)
 class SeriesSpec:
     file: str
-    label: str
+    label: str  # legend
+    short: str  # end-of-line label
     column: str | None = None  # None = MSCI variant column (close / net / gross)
 
 
 SERIES: dict[str, SeriesSpec] = {
-    "world": SeriesSpec("msci_world.csv", "MSCI World Index"),
-    "em": SeriesSpec("msci_em.csv", "MSCI Emerging Markets Index"),
-    "acwi": SeriesSpec("msci_acwi.csv", "MSCI ACWI Index"),
-    "rga": SeriesSpec("rga.csv", "RGA Index", column="close"),
+    "world": SeriesSpec("msci_world.csv", "MSCI World Index", "MSCIWO"),
+    "em": SeriesSpec("msci_em.csv", "MSCI Emerging Markets Index", "MSCIEM"),
+    "acwi": SeriesSpec("msci_acwi.csv", "MSCI ACWI Index", "MSCIACWI"),
+    "rga": SeriesSpec("rga.csv", "RGA Index", "RGA", column="close"),
 }
 
 # Red shades, dark -> light, assigned in the order series are given.
@@ -48,6 +50,11 @@ INK = "#1f1f1f"
 INK_MUTED = "#6b6b6b"
 GRID = "#e6e6e6"
 BAND = "#f2f2f2"
+# y-axis title per MSCI variant (lines are rebased to 100 at the base date)
+YLABELS = {"close": "Price Return", "net": "Net Return", "gross": "Gross Return"}
+# Period return text: plus blue / minus red (CVD-safe pair, minus = 赤字).
+POSITIVE = "#1f5fbf"
+NEGATIVE = "#c62828"
 
 # Figure size in cm. Default: upper half of a content slide in
 # output/template/新興国市場_P検.pptx (27.52 x 19.05 cm slide; content area
@@ -78,7 +85,7 @@ _use_japanese_font()
 
 
 def load_series(
-    key: str, variant: str = "net", index_dir: Path = INDEX_DIR
+    key: str, variant: str = "close", index_dir: Path = INDEX_DIR
 ) -> pd.Series:
     """Level series (DatetimeIndex) for a SERIES key. variant: close / net / gross."""
     spec = SERIES[key]
@@ -105,7 +112,7 @@ def rebased_frame(
     series: list[str],
     base: str,
     end: str | None = None,
-    variant: str = "net",
+    variant: str = "close",
     index_dir: Path = INDEX_DIR,
 ) -> pd.DataFrame:
     """Rebased levels, one column per series (label), from base to end."""
@@ -141,14 +148,65 @@ def _spread_labels(ys: list[float], min_gap: float) -> list[float]:
     return out
 
 
+def _end_labels(fig, ax, ends, x_end, h_in: float, fontsize: float) -> None:
+    """Short name + value just right of the line ends, inside the plot.
+
+    Labels are spread vertically so they do not overlap, joined to their line
+    end by a thin leader, and the x-axis is extended just enough to fit them.
+    """
+    y0, y1 = ax.get_ylim()
+    min_gap = (y1 - y0) * (fontsize * 1.35 / 72) / (h_in * 0.75)
+    ys = _spread_labels([e[1] for e in ends], min_gap=min_gap)
+    items = []
+    for (x, y, short, value, vcolor), y_lab in zip(ends, ys, strict=False):
+        name = ax.text(x_end, y_lab, short, va="center", fontsize=fontsize, color=INK)
+        val = ax.annotate(
+            value,
+            xy=(1, 0.5),
+            xycoords=name,
+            xytext=(3, 0),
+            textcoords="offset points",
+            va="center",
+            fontsize=fontsize,
+            fontweight="bold",
+            color=vcolor,
+        )
+        (leader,) = ax.plot([], [], color=GRID, lw=0.6, zorder=1)
+        items.append((x, y, y_lab, name, val, leader))
+
+    gap_pt, pad_pt = 6, 4
+    for _ in range(3):
+        fig.canvas.draw()
+        to_px = ax.transData.transform
+        a, b = ax.get_xlim()
+        x_end_px = to_px((mdates.date2num(x_end), 0))[0]
+        x_lab = ax.transData.inverted().transform(
+            (x_end_px + gap_pt * fig.dpi / 72, 0)
+        )[0]
+        for x, y, y_lab, name, _val, leader in items:
+            name.set_x(x_lab)
+            leader.set_data([mdates.date2num(x), x_lab], [y, y_lab])
+        fig.canvas.draw()
+        right_px = (
+            max(it[4].get_window_extent().x1 for it in items) + pad_pt * fig.dpi / 72
+        )
+        width_px = right_px - x_end_px
+        axes_w = ax.bbox.width
+        if abs(right_px - ax.bbox.x1) < 1:
+            return
+        x_end_num = mdates.date2num(x_end)
+        ax.set_xlim(a, a + (x_end_num - a) * axes_w / (axes_w - width_px))
+
+
 def plot_rebased(
     series: list[str] = ("world", "em", "rga"),
     base: str = "2026-01-01",
     highlight: tuple[str, str] | None = ("2026-07-01", "2026-09-30"),
     end: str | None = None,
-    variant: str = "net",
+    variant: str = "close",
     colors: list[str] | None = None,
     title: str | None = None,
+    ylabel: str | None = None,
     index_dir: Path = INDEX_DIR,
     size_cm: tuple[float, float] = SLIDE_UPPER_HALF_CM,
     fontsize: float = 9,
@@ -162,8 +220,9 @@ def plot_rebased(
                The end labels show each series' return over this period
                (last value before start -> last value on/before end).
     end:       last date shown (default: highlight end, else latest data).
-    variant:   MSCI column: "close" (price), "net" or "gross".
+    variant:   MSCI column: "close" (price index, default), "net" or "gross".
     title:     optional title (none by default).
+    ylabel:    y-axis title (default from variant: "Price Return", ...).
     size_cm:   figure size as placed on the slide (width, height in cm), so
                `fontsize` (pt) is the size it appears at. Paste without scaling.
     """
@@ -186,9 +245,10 @@ def plot_rebased(
         ax.axvspan(hs, he, color=BAND, zorder=0, lw=0)
     ax.axhline(100, color=INK_MUTED, lw=0.6, ls="--", zorder=1)
 
-    ends = []
-    for col, color in zip(df.columns, colors, strict=False):
+    ends = []  # (x, y, short name, value text, value color)
+    for key, col, color in zip(series, df.columns, colors, strict=False):
         s = df[col].dropna()
+        short = SERIES[key].short
         if highlight:
             # dark part starts at the last point before the period so it joins up
             prior = s[s.index < hs]
@@ -207,43 +267,32 @@ def plot_rebased(
                         zorder=2,
                     )
             ax.plot(inside.index, inside, color=color, lw=1.8, zorder=3, label=col)
-            text = f"{col}  {period_return(s, hs, he):+.1%}"
+            r = period_return(s, hs, he)
+            value, vcolor = (
+                f"{r:+.1%}".replace("-", "−"),
+                POSITIVE if r >= 0 else NEGATIVE,
+            )
         else:
             ax.plot(s.index, s, color=color, lw=1.6, zorder=3, label=col)
-            text = f"{col}  {s.iloc[-1]:.1f}"
-        ends.append((s.index[-1], s.iloc[-1], text, color))
-
-    ax.set_xlim(df.index.min(), df.index.max())
-
-    # direct labels just right of the plot (text in ink, colored dot = identity);
-    # the gap between labels is one text line, converted to data units
-    y0, y1 = ax.get_ylim()
-    line_in = fontsize * 1.3 / 72
-    min_gap = (y1 - y0) * line_in / (h_in * 0.75)
-    ys = _spread_labels([p[1] for p in ends], min_gap=min_gap)
-    for (x, y, text, color), y_lab in zip(ends, ys, strict=False):
+            value, vcolor = f"{s.iloc[-1]:.1f}", INK
         ax.scatter(
-            [x], [y], s=12, color=color, zorder=4, edgecolors="white", linewidths=0.6
+            [s.index[-1]],
+            [s.iloc[-1]],
+            s=12,
+            color=color,
+            zorder=4,
+            edgecolors="white",
+            linewidths=0.6,
         )
-        ax.annotate(
-            text,
-            xy=(x, y),
-            xytext=(1.012, y_lab),
-            textcoords=("axes fraction", "data"),
-            va="center",
-            fontsize=fontsize,
-            color=INK,
-            annotation_clip=False,
-            arrowprops={
-                "arrowstyle": "-",
-                "color": GRID,
-                "lw": 0.6,
-                "shrinkA": 0,
-                "shrinkB": 2,
-            },
-        )
+        ends.append((s.index[-1], s.iloc[-1], short, value, vcolor))
 
-    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    x_first, x_end = df.index.min(), df.index.max()
+    ax.set_xlim(x_first, x_end)
+    _end_labels(fig, ax, ends, x_end, h_in, fontsize)
+
+    # month ticks only where there is data (not in the label area)
+    months = pd.date_range(x_first.to_period("M").to_timestamp(), x_end, freq="MS")
+    ax.xaxis.set_major_locator(mticker.FixedLocator(mdates.date2num(months)))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y/%m"))
     ax.grid(axis="y", color=GRID, lw=0.6)
     ax.set_axisbelow(True)
@@ -252,9 +301,9 @@ def plot_rebased(
     for side in ("left", "bottom"):
         ax.spines[side].set_color(GRID)
     ax.tick_params(colors=INK_MUTED, labelsize=small, length=2, pad=2)
-    ax.set_ylabel(
-        f"指数（{pd.Timestamp(base):%Y/%m/%d} = 100）", color=INK_MUTED, fontsize=small
-    )
+    if ylabel is None:
+        ylabel = YLABELS.get(variant, variant)
+    ax.set_ylabel(ylabel, color=INK_MUTED, fontsize=small)
     # legend in one row above the plot, so it never covers the lines
     ax.legend(
         loc="lower left",

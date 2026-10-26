@@ -33,7 +33,9 @@ Scripts (`scripts/`):
 uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
 
 # Index chart rebased to 100 at --base, --highlight period drawn darker (red shades),
-# sized for the upper half of a template slide (24.8 x 7.4 cm, 300 dpi; --size-cm to change)
+# sized for the upper half of a template slide (24.8 x 7.4 cm, 300 dpi; --size-cm to change).
+# MSCI = price index by default (--variant net/gross for total return); labels show the
+# highlight-period return (plus blue / minus red)
 # -> output/figures/index_<series>_<base>.png / .csv  (library: p_ken.index_chart.plot_rebased)
 uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-07-01 2026-09-30 --series world em rga
 ```

@@ -40,11 +40,17 @@ def main() -> None:
     parser.add_argument(
         "--end", default=None, help="last date (default: highlight end)"
     )
-    parser.add_argument("--variant", default="net", choices=["close", "net", "gross"])
+    parser.add_argument(
+        "--variant",
+        default="close",
+        choices=["close", "net", "gross"],
+        help="MSCI series: close = price index (default), net / gross = total return",
+    )
     parser.add_argument(
         "--colors", nargs="+", default=None, help="hex colors per series"
     )
     parser.add_argument("--title", default=None)
+    parser.add_argument("--ylabel", default=None, help="default: Price Return etc.")
     parser.add_argument(
         "--size-cm",
         nargs=2,
@@ -66,6 +72,7 @@ def main() -> None:
         variant=args.variant,
         colors=args.colors,
         title=args.title,
+        ylabel=args.ylabel,
         size_cm=tuple(args.size_cm),
         fontsize=args.fontsize,
     )
