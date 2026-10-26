@@ -32,9 +32,10 @@ Scripts (`scripts/`):
 # Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
 uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
 
-# Index chart rebased to 100 at --base, --highlight period drawn darker (red shades)
+# Index chart rebased to 100 at --base, --highlight period drawn darker (red shades),
+# sized for the upper half of a template slide (24.8 x 7.4 cm, 300 dpi; --size-cm to change)
 # -> output/figures/index_<series>_<base>.png / .csv  (library: p_ken.index_chart.plot_rebased)
-uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-06-01 2026-09-30 --series world em rga
+uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-07-01 2026-09-30 --series world em rga
 ```
 
 Outputs:

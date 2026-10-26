@@ -4,10 +4,12 @@ Run from the p-ken root (needs data/index_return, see fetch_msci_index.py):
 
     uv run python scripts/plot_index_ytd.py
     uv run python scripts/plot_index_ytd.py --base 2026-01-01 \\
-        --highlight 2026-06-01 2026-09-30 --series world em rga
+        --highlight 2026-07-01 2026-09-30 --series world em rga
     uv run python scripts/plot_index_ytd.py --series acwi em --variant close
 
-Writes a PNG (2560x1440) and the rebased values as CSV to --out-dir
+The PNG is rendered at its size on the slide (default 24.8 x 7.4 cm, the upper
+half of a content slide in output/template; 300 dpi), so paste it unscaled.
+Writes the PNG and the rebased values as CSV to --out-dir
 (default output/figures).
 """
 
@@ -31,7 +33,7 @@ def main() -> None:
         "--highlight",
         nargs=2,
         metavar=("START", "END"),
-        default=["2026-06-01", "2026-09-30"],
+        default=["2026-07-01", "2026-09-30"],
         help="period drawn in full color",
     )
     parser.add_argument("--no-highlight", action="store_true")
@@ -43,6 +45,15 @@ def main() -> None:
         "--colors", nargs="+", default=None, help="hex colors per series"
     )
     parser.add_argument("--title", default=None)
+    parser.add_argument(
+        "--size-cm",
+        nargs=2,
+        type=float,
+        metavar=("W", "H"),
+        default=list(index_chart.SLIDE_UPPER_HALF_CM),
+        help="size on the slide in cm (default: upper half of the template slide)",
+    )
+    parser.add_argument("--fontsize", type=float, default=9, help="pt on the slide")
     parser.add_argument("--out-dir", type=Path, default=Path("output/figures"))
     args = parser.parse_args()
 
@@ -55,6 +66,8 @@ def main() -> None:
         variant=args.variant,
         colors=args.colors,
         title=args.title,
+        size_cm=tuple(args.size_cm),
+        fontsize=args.fontsize,
     )
     end = args.end or (highlight[1] if highlight else None)
     df = index_chart.rebased_frame(args.series, args.base, end, args.variant)
@@ -65,6 +78,10 @@ def main() -> None:
     df.round(4).to_csv(args.out_dir / f"{stem}.csv", index_label="date")
     print(f"Saved: {args.out_dir / stem}.png / .csv")
     print(df.iloc[[0, -1]].round(2).to_string())
+    if highlight:
+        rets = index_chart.period_returns(df, *highlight)
+        print(f"period return {highlight[0]} - {highlight[1]}:")
+        print(rets.map("{:+.2%}".format).to_string())
 
 
 if __name__ == "__main__":

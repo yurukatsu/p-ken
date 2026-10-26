@@ -4,7 +4,7 @@
     fig = index_chart.plot_rebased(
         series=["world", "em", "rga"],
         base="2026-01-01",
-        highlight=("2026-06-01", "2026-09-30"),
+        highlight=("2026-07-01", "2026-09-30"),
     )
 
 Series are looked up in SERIES (key -> file / column / label) under
@@ -32,10 +32,10 @@ class SeriesSpec:
 
 
 SERIES: dict[str, SeriesSpec] = {
-    "world": SeriesSpec("msci_world.csv", "MSCI World（先進国）"),
-    "em": SeriesSpec("msci_em.csv", "MSCI EM（新興国）"),
-    "acwi": SeriesSpec("msci_acwi.csv", "MSCI ACWI（全世界）"),
-    "rga": SeriesSpec("rga.csv", "RGA（RGA 指数）", column="close"),
+    "world": SeriesSpec("msci_world.csv", "MSCI World Index"),
+    "em": SeriesSpec("msci_em.csv", "MSCI Emerging Markets Index"),
+    "acwi": SeriesSpec("msci_acwi.csv", "MSCI ACWI Index"),
+    "rga": SeriesSpec("rga.csv", "RGA Index", column="close"),
 }
 
 # Red shades, dark -> light, assigned in the order series are given.
@@ -48,6 +48,12 @@ INK = "#1f1f1f"
 INK_MUTED = "#6b6b6b"
 GRID = "#e6e6e6"
 BAND = "#f2f2f2"
+
+# Figure size in cm. Default: upper half of a content slide in
+# output/template/新興国市場_P検.pptx (27.52 x 19.05 cm slide; content area
+# 1.36 cm side margins, from 2.8 cm below the title to the middle of the page).
+SLIDE_UPPER_HALF_CM = (24.8, 7.4)
+CM = 1 / 2.54
 
 JP_FONTS = [
     "Hiragino Sans",
@@ -110,6 +116,21 @@ def rebased_frame(
     return df
 
 
+def period_return(s: pd.Series, start: str, end: str) -> float:
+    """Return from the last value before `start` to the last value on/before `end`."""
+    s = s.dropna()
+    before = s[s.index < pd.Timestamp(start)]
+    upto = s[s.index <= pd.Timestamp(end)]
+    if before.empty or upto.empty:
+        return float("nan")
+    return upto.iloc[-1] / before.iloc[-1] - 1
+
+
+def period_returns(df: pd.DataFrame, start: str, end: str) -> pd.Series:
+    """period_return for every column of a level / rebased frame."""
+    return pd.Series({c: period_return(df[c], start, end) for c in df.columns})
+
+
 def _spread_labels(ys: list[float], min_gap: float) -> list[float]:
     """Nudge label y positions apart so they do not overlap."""
     order = sorted(range(len(ys)), key=lambda i: ys[i])
@@ -123,22 +144,28 @@ def _spread_labels(ys: list[float], min_gap: float) -> list[float]:
 def plot_rebased(
     series: list[str] = ("world", "em", "rga"),
     base: str = "2026-01-01",
-    highlight: tuple[str, str] | None = ("2026-06-01", "2026-09-30"),
+    highlight: tuple[str, str] | None = ("2026-07-01", "2026-09-30"),
     end: str | None = None,
     variant: str = "net",
     colors: list[str] | None = None,
     title: str | None = None,
-    note: str | None = None,
     index_dir: Path = INDEX_DIR,
-    figsize: tuple[float, float] = (12.8, 7.2),
+    size_cm: tuple[float, float] = SLIDE_UPPER_HALF_CM,
+    fontsize: float = 9,
+    dpi: int = 300,
 ) -> plt.Figure:
     """Line chart of indices rebased to 100, highlighted period drawn darker.
 
     series:    SERIES keys, drawn with colors[i] (default: REDS, dark -> light).
     base:      base date (value on it, or the last before it, = 100).
     highlight: (start, end) drawn in full color; elsewhere the lines are faint.
+               The end labels show each series' return over this period
+               (last value before start -> last value on/before end).
     end:       last date shown (default: highlight end, else latest data).
     variant:   MSCI column: "close" (price), "net" or "gross".
+    title:     optional title (none by default).
+    size_cm:   figure size as placed on the slide (width, height in cm), so
+               `fontsize` (pt) is the size it appears at. Paste without scaling.
     """
     series = list(series)
     colors = list(colors or REDS)
@@ -148,30 +175,26 @@ def plot_rebased(
         end = highlight[1]
     df = rebased_frame(series, base, end, variant, index_dir)
     hs, he = (pd.Timestamp(d) for d in highlight) if highlight else (None, None)
+    small = fontsize - 1
 
-    fig, ax = plt.subplots(figsize=figsize, dpi=200)
+    w_in, h_in = size_cm[0] * CM, size_cm[1] * CM
+    fig, ax = plt.subplots(figsize=(w_in, h_in), dpi=dpi, layout="constrained")
     fig.patch.set_facecolor("white")
+    fig.get_layout_engine().set(w_pad=0.04, h_pad=0.04)
 
     if highlight:
         ax.axvspan(hs, he, color=BAND, zorder=0, lw=0)
-        ax.text(
-            hs + (he - hs) / 2,
-            1.0,
-            f"強調期間 {hs:%Y/%m/%d}–{he:%Y/%m/%d}",
-            transform=ax.get_xaxis_transform(),
-            ha="center",
-            va="bottom",
-            fontsize=11,
-            color=INK_MUTED,
-        )
-    ax.axhline(100, color=INK_MUTED, lw=0.8, ls="--", zorder=1)
+    ax.axhline(100, color=INK_MUTED, lw=0.6, ls="--", zorder=1)
 
-    last_points = []
+    ends = []
     for col, color in zip(df.columns, colors, strict=False):
         s = df[col].dropna()
         if highlight:
-            inside = s[(s.index >= hs) & (s.index <= he)]
-            before = s[s.index <= hs]
+            # dark part starts at the last point before the period so it joins up
+            prior = s[s.index < hs]
+            anchor = prior.index[-1] if len(prior) else hs
+            before = s[s.index <= anchor]
+            inside = s[(s.index >= anchor) & (s.index <= he)]
             after = s[s.index >= he]
             for part in (before, after):
                 if len(part) > 1:
@@ -179,72 +202,71 @@ def plot_rebased(
                         part.index,
                         part,
                         color=color,
-                        lw=1.6,
+                        lw=1.0,
                         alpha=MUTED_ALPHA,
                         zorder=2,
                     )
-            ax.plot(inside.index, inside, color=color, lw=2.6, zorder=3, label=col)
+            ax.plot(inside.index, inside, color=color, lw=1.8, zorder=3, label=col)
+            text = f"{col}  {period_return(s, hs, he):+.1%}"
         else:
-            ax.plot(s.index, s, color=color, lw=2.2, zorder=3, label=col)
-        last_points.append((s.index[-1], s.iloc[-1], col, color))
+            ax.plot(s.index, s, color=color, lw=1.6, zorder=3, label=col)
+            text = f"{col}  {s.iloc[-1]:.1f}"
+        ends.append((s.index[-1], s.iloc[-1], text, color))
 
-    # direct labels at the line ends (text in ink, colored dot = identity)
+    ax.set_xlim(df.index.min(), df.index.max())
+
+    # direct labels just right of the plot (text in ink, colored dot = identity);
+    # the gap between labels is one text line, converted to data units
     y0, y1 = ax.get_ylim()
-    ys = _spread_labels([p[1] for p in last_points], min_gap=(y1 - y0) * 0.045)
-    x_end = df.index.max()
-    for (x, y, name, color), y_lab in zip(last_points, ys, strict=False):
+    line_in = fontsize * 1.3 / 72
+    min_gap = (y1 - y0) * line_in / (h_in * 0.75)
+    ys = _spread_labels([p[1] for p in ends], min_gap=min_gap)
+    for (x, y, text, color), y_lab in zip(ends, ys, strict=False):
         ax.scatter(
-            [x], [y], s=28, color=color, zorder=4, edgecolors="white", linewidths=1
+            [x], [y], s=12, color=color, zorder=4, edgecolors="white", linewidths=0.6
         )
         ax.annotate(
-            f"{name}  {y:.1f}",
+            text,
             xy=(x, y),
-            xytext=(x_end + pd.Timedelta(days=4), y_lab),
+            xytext=(1.012, y_lab),
+            textcoords=("axes fraction", "data"),
             va="center",
-            fontsize=11,
+            fontsize=fontsize,
             color=INK,
             annotation_clip=False,
             arrowprops={
                 "arrowstyle": "-",
                 "color": GRID,
-                "lw": 0.8,
+                "lw": 0.6,
                 "shrinkA": 0,
-                "shrinkB": 3,
+                "shrinkB": 2,
             },
         )
 
-    ax.set_xlim(df.index.min(), x_end)
     ax.xaxis.set_major_locator(mdates.MonthLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y/%m"))
-    ax.grid(axis="y", color=GRID, lw=0.8)
+    ax.grid(axis="y", color=GRID, lw=0.6)
     ax.set_axisbelow(True)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     for side in ("left", "bottom"):
         ax.spines[side].set_color(GRID)
-    ax.tick_params(colors=INK_MUTED, labelsize=11)
+    ax.tick_params(colors=INK_MUTED, labelsize=small, length=2, pad=2)
     ax.set_ylabel(
-        f"指数（{pd.Timestamp(base):%Y/%m/%d} = 100）", color=INK_MUTED, fontsize=11
+        f"指数（{pd.Timestamp(base):%Y/%m/%d} = 100）", color=INK_MUTED, fontsize=small
     )
-
-    ax.legend(loc="upper left", frameon=False, fontsize=11, labelcolor=INK)
-    first = df.index.min()
-    ax.set_title(
-        title or f"主要指数の推移（{first:%Y/%m/%d} = 100）",
-        loc="left",
-        fontsize=16,
-        color=INK,
-        pad=28,
+    # legend in one row above the plot, so it never covers the lines
+    ax.legend(
+        loc="lower left",
+        bbox_to_anchor=(0, 1.0),
+        ncol=len(series),
+        frameon=False,
+        fontsize=fontsize,
+        labelcolor=INK,
+        handlelength=1.6,
+        borderaxespad=0.2,
+        columnspacing=1.6,
     )
-    variant_note = {
-        "close": "価格指数",
-        "net": "配当込み（ネット）",
-        "gross": "配当込み（グロス）",
-    }
-    msci = [k for k in series if SERIES[k].column is None]
-    default_note = (
-        f"MSCI は USD 建て・{variant_note.get(variant, variant)}。" if msci else ""
-    ) + f"期間 {first:%Y/%m/%d}–{x_end:%Y/%m/%d}。"
-    fig.text(0.01, 0.01, note or default_note, fontsize=9, color=INK_MUTED)
-    fig.subplots_adjust(left=0.07, right=0.80, top=0.88, bottom=0.08)
+    if title:
+        fig.suptitle(title, x=0.01, ha="left", fontsize=fontsize + 3, color=INK)
     return fig
