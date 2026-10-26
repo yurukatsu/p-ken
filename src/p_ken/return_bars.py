@@ -165,11 +165,10 @@ def plot_period_bars(
     ax.set_xlim(lo - pad, hi + pad)
     ax.set_ylim(-0.6, n - 0.4)
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0%}"))
-    ax.xaxis.tick_top()
     ax.grid(axis="x", color=GRID, lw=0.5, zorder=0)
-    for side in ("right", "bottom", "left"):
+    for side in ("right", "top", "left"):
         ax.spines[side].set_visible(False)
-    ax.spines["top"].set_color(GRID)
+    ax.spines["bottom"].set_color(GRID)
     ax.tick_params(axis="x", colors=INK_MUTED, labelsize=fontsize - 1, length=0, pad=1)
     ax.tick_params(axis="y", colors=INK, labelsize=fontsize, length=0, pad=2)
 
@@ -192,7 +191,7 @@ def plot_period_bars(
         title=f"USD, vs {base_label}",
         title_fontproperties={"size": fontsize - 1},
         loc="lower right",
-        bbox_to_anchor=(1.0, 1.04),
+        bbox_to_anchor=(1.0, 1.01),
         ncol=len(labels) + 1,
         frameon=False,
         fontsize=fontsize - 1,
