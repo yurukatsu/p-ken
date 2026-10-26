@@ -178,7 +178,7 @@ def _end_labels(fig, ax, ends, x_end, h_in: float, fontsize: float) -> None:
     for _ in range(3):
         fig.canvas.draw()
         to_px = ax.transData.transform
-        a, b = ax.get_xlim()
+        a = ax.get_xlim()[0]
         x_end_px = to_px((mdates.date2num(x_end), 0))[0]
         x_lab = ax.transData.inverted().transform(
             (x_end_px + gap_pt * fig.dpi / 72, 0)
