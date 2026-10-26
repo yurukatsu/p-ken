@@ -1,35 +1,33 @@
-"""Core factors (data/gemq/exposures/core) as exposures.
+"""Core factors: a few single factors, and a value composite of your own.
 
-io.load_core(ym) returns bid + every core factor, with the missing sentinel
-(-999999998) turned into NaN. Factor names / categories: io.load_core_list().
+uv run python samples/04_core_exposure.py
 """
 
 import pandas as pd
 
-from p_ken import fret, io
+from p_ken import factors, io
+from p_ken.stats import zscore
 
-print(io.load_core_list().groupby("type").variable.apply(list).to_string())
+# (a) selected core factors with the report's preset (Blom, missing -> 0)
+src = factors.core_exposures("gemq", ["BP_EST", "EP_EST", "ROE_EST", "MOM12"])
+daily = factors.regression_returns("gemq", src, "2026-01-01", "2026-09-30")
+print("--- core factors, sum Jul-Sep")
+print(daily.loc["2026-07-01":].sum().map("{:+.2%}".format).to_string())
 
-# (a) A few raw core factors
-res = fret.run(
-    exposures=io.load_core,
-    factors={"B/P": "BP_EST", "E/P": "EP_EST", "ROE": "ROE_EST", "MOM12": "MOM12"},
-    out_dir="data/gemq/fret/samples/04_core",
+
+# (b) a composite: mean z-score of every Stock / Flow Value factor
+def value_composite(ym: str) -> pd.DataFrame:
+    fl = io.load_core_list("gemq")
+    cols = fl.loc[fl.type.isin(["Stock Value", "Flow Value"]), "variable"].tolist()
+    bids = io.load_universe("gemq", ym).bid
+    core = io.load_core("gemq", ym).set_index("bid").reindex(bids)
+    x = core[[c for c in cols if c in core.columns]]
+    return pd.DataFrame({"value_composite": zscore(x).mean(axis=1)}).rename_axis("bid")
+
+
+comp = factors.regression_returns(
+    "gemq", factors.monthly(value_composite), "2026-01-01", "2026-09-30"
 )
-print("--- core factors")
-print(res["quintile_summary"].query("grp == 'Q5-Q1'").to_string(index=False))
-
-
-# (b) Every factor in one category, z-scored within the universe each month
-def value_z(ym: str) -> pd.DataFrame:
-    unv = io.load_unv(ym)[["bid"]]
-    core = unv.merge(io.load_core(ym), on="bid", how="left")
-    cols = io.load_core_list().query("type == 'Stock Value' or type == 'Flow Value'")
-    cols = [c for c in cols.variable if c in core.columns]
-    z = (core[cols] - core[cols].mean()) / core[cols].std()
-    return pd.DataFrame({"bid": core.bid, "value_composite": z.mean(axis=1)})
-
-
-res = fret.run(exposures=value_z, out_dir="data/gemq/fret/samples/04_value_z")
-print("--- value composite")
-print(res["quintile_summary"].query("grp == 'Q5-Q1'").to_string(index=False))
+print(
+    "--- value composite, sum Jul-Sep:", f"{comp.loc['2026-07-01':, 'value_composite'].sum():+.2%}"
+)

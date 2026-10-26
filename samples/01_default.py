@@ -1,21 +1,19 @@
-"""AI / Revision / GEMQ3 on the MSCI EM universe (same as `p-ken fret`).
+"""Default factor returns: NAM factors on MSCI EM (AI, Revision, GEMQ3).
 
-Run from the repository root:
-    uv run p-ken gemq3                # once, to build data/gemq/exposures/nam/gemq3
+Local-currency return regressed on the Blom-standardized exposure, one factor
+at a time; the slope is the daily factor return (docs/methodology.md).
+
     uv run python samples/01_default.py
 """
 
-from p_ken import fret
+from p_ken import factors
+from p_ken.stats import annualized
 
-for ret_col in ["ret", "sret"]:  # total / specific returns
-    res = fret.run(
-        universe=fret.default_universe,  # ym -> data/gemq/universe/{ym}.csv
-        exposures=fret.default_exposures,  # ai, rev, Gousei_3Factor at ym end
-        factors=fret.DEFAULT_FACTORS,  # {output name: column}
-        months=None,  # None = every month in data/gemq/rtn
-        ret_col=ret_col,
-        out_dir=f"data/gemq/fret/samples/01_default/{ret_col}",
+for ret_col in ["ret", "sret"]:  # local-currency total / specific return
+    daily = factors.nam_factor_returns("gemq", "2026-01-01", "2026-09-30", ret_col)
+    print(
+        f"=== {ret_col}  (sum Jul-Sep: "
+        + ", ".join(f"{k} {v:+.2%}" for k, v in daily.loc["2026-07-01":].sum().items())
+        + ")"
     )
-    print(f"=== {ret_col}")
-    print(res["quintile_summary"].query("grp == 'Q5-Q1'").to_string(index=False))
-    print(res["regression_summary"].to_string(index=False))
+    print(annualized(daily).round(4).to_string())

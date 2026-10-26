@@ -1,7 +1,7 @@
 [project]
 name = "p-ken"
 version = "0.1.0"
-description = "Add your description here"
+description = "EM market review figures and factor returns (MSCI EM / RGA)"
 readme = "README.md"
 authors = [
     { name = "yurukatsu", email = "yuruyuru.kaihatsu@gmail.com" }
@@ -15,9 +15,6 @@ dependencies = [
     "squarify>=0.4.5",
 ]
 
-[project.scripts]
-p-ken = "p_ken:main"
-
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
 build-backend = "uv_build"
@@ -25,5 +22,12 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "ipykernel>=7.4.0",
+    "pytest>=8",
     "ruff>=0.17.2",
 ]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,81 +1,43 @@
 # p-ken
 
-GEMQ3 scores and daily factor returns (AI / Revision / GEMQ3) for MSCI EM,
-ported from `get_gemq3()` and `fret_nam_monitor()` in `archive/msci_lib.R.r`.
+新興国株式の四半期レビュー資料に貼る図と、ファクターリターンを作るツールです。
+MSCI EM と RGA の 2 つのユニバースを扱います。
 
-Input data lives in `data/gemq` (not tracked). `{ym}` is a month end:
+- **使い方**：[docs/manual.md](docs/manual.md)
+- **計算方法（定式化）**：[docs/methodology.md](docs/methodology.md)
 
-| path | content |
+## 作れる図
+
+| 図 | スクリプト |
 |---|---|
-| `universe/{ym}.csv` | MSCI EM constituents at `ym` end |
-| `exposures/nam/{ai,revision,qip}/` | AI, Revision NTM (adj), QIP patents at `ym` end |
-| `exposures/core/{ym}.csv` | core factors (`exposures/fc_list.csv`) |
-| `rtn/{ym}.csv` | daily `ret` / `sret` (%) of the **following month** for `universe/{ym}` |
+| 指数の推移（MSCI World / EM / RGA、年初来、四半期を強調） | `scripts/plot_index_ytd.py` |
+| 国別・MSCI EM セクター別の四半期リターン | `scripts/plot_period_returns.py` |
+| コモンファクターリターン（タイプ別） | `scripts/plot_common_fret.py` |
+| NAM ファクターリターン（AI、Revision、GEMQ3 / TVL、RVL、合成） | `scripts/plot_nam_fret.py` |
+| 銘柄ツリーマップ（国別・セクター別・国×セクター） | `scripts/plot_treemap.py` |
+
+図はスライドに貼る大きさ（cm）で出力するので、拡大・縮小せずに貼ります。
+
+ファクターリターンのデフォルトは「現地通貨建てリターンを、Blom スコアに標準化したエクスポージャーで 1 ファクターずつ回帰した傾き」です。
+
+## 四半期の作業
 
 ```sh
-uv run p-ken all                          # build GEMQ3 and factor returns
-uv run p-ken gemq3 --qip-na-strict        # reproduce R NA handling in rescale_mean()
-uv run p-ken fret
+uv sync
+# 1. data/gemq, data/blf を最新にし、config/report.toml の期間を書き換える
+uv run python scripts/build_gemq3.py                          # 2. GEMQ3
+uv run scripts/fetch_lseg.py --env-file ../datastream/.env all  # 3. LSEG から市場データ
+uv run python scripts/make_figures.py                         # 4. 全部の図 -> output/figures
 ```
 
-To run factor returns with a different universe or exposures, see
-[`samples/`](samples/README.md) (`p_ken.fret.run()`). `notebooks/` is for local
-work and is not tracked.
+## 構成
 
-Scripts (`scripts/`):
-
-```sh
-# MSCI EM / ACWI / World daily closing levels (USD) from LSEG
-# -> data/index_return/msci_{em,acwi,world}.csv
-#    columns: dateymd, close, return (price), net, net_return, gross, gross_return
-# Self-contained (PEP 723): uv installs lseg-data itself.
-# Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
-uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
-
-# EM country indices (15; Korea = KOSPI, no Poland) and MSCI EM sectors (price; --sector-variant net)
-# in USD from LSEG -> data/index_return/{country,em_sector}_{close,return}_usd.csv
-uv run scripts/fetch_em_markets.py [--start 1999-01-01] [--groups country em_sector] [--env-file ../datastream/.env]
-
-# Index chart rebased to 100 at --base, --highlight period drawn darker (red shades),
-# sized for the upper half of a template slide (24.8 x 7.4 cm, 300 dpi; --size-cm to change).
-# MSCI = price index by default (--variant net/gross for total return); labels show the
-# highlight-period return (plus blue / minus red) above or below each line end
-# -> output/figures/index_<series>_<base>.png / .csv  (library: p_ken.index_chart.plot_rebased)
-uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-07-01 2026-09-30 --series world em rga
-
-# Period return bars for countries / MSCI EM sectors (USD): bar = start -> end,
-# markers = month-end cumulative returns; quarter-slide size (12.2 x 7.4 cm)
-# -> output/figures/period_returns_<group>_<start>_<end>.png / .csv  (library: p_ken.return_bars)
-uv run python scripts/plot_period_returns.py --start 2026-07-01 --end 2026-09-30
-
-# Common factor returns by fc_list type (core exposures, daily one-factor regression on
-# Blom scores, type = mean of its factors) for MSCI EM (data/gemq) and RGA (data/blf):
-# cumulative sum from 0, highlight period in full colour  (library: p_ken.common_fret)
-# -> output/figures/common_fret_<universe>_<start>.png / _factors.csv / _types.csv
-uv run python scripts/plot_common_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30  # ret and sret (_sret)
-
-# NAM factor returns, same method / chart style:
-#   RGA (data/blf): AI, TVL, RVL, ai70_bd30 from the daily score files (latest before each date)
-#   MSCI EM (data/gemq): AI, Revision, GEMQ3 from the month-end files (paired with rtn/{ym})
-#   two definitions (--methods): regression slope, and q5 = top-quintile mean excess return
-#   (RGA: archive BLF.fret_nam_daily, CN=False; MSCI EM: R fret_nam_monitor)
-# -> output/figures/nam_fret_{blf,gemq}_<start>[_q5][_sret].png / .csv  (library: p_ken.nam_fret)
-uv run python scripts/plot_nam_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30
-
-# Stock treemaps (MSCI EM / RGA): area = 9/30 weight, colour = USD return 6/30-9/30 from LSEG
-# (SEDOL -> RIC / HQ country / GICS sector, TR.PriceClose(Curn=USD); as in ../datastream)
-uv run scripts/fetch_stock_returns.py [--start 2026-07-01 --end 2026-09-30] [--env-file ../datastream/.env]
-uv run python scripts/plot_treemap.py [--groups country sector country_sector] [--clip 0.2]   # whole slide: 24.8 x 15.0 cm, 8pt
-# -> data/index_return/stocks_<universe>_<start>_<end>.csv, output/figures/treemap_<universe>_{country,sector,country_sector}_<period>.png
 ```
-
-Outputs:
-
-- `data/gemq/exposures/nam/gemq3/{ym}.csv` — universe with `ai`, `airev`, `Gousei_3Factor`
-- `data/gemq/fret/{ret,sret}/quintile_daily.csv` — Q1..Q5 and Q5-Q1 excess returns (vs universe EW)
-- `data/gemq/fret/{ret,sret}/regression_daily.csv` — daily cross-sectional OLS slope per factor
-- `data/gemq/fret/{ret,sret}/*_summary.csv` — annualized return / risk / RR
-
-Note: `rescale_mean()` (QIP) ignores missing `invention_count_12m` when taking
-the mean. The R version does not (`mean()` without `na.rm`), so one missing value
-sets QIP to 0 for every stock; `--qip-na-strict` reproduces that.
+config/report.toml   レポートの期間
+scripts/             実行するスクリプト（fetch_lseg.py, build_gemq3.py, plot_*.py, make_figures.py）
+src/p_ken/           ライブラリ（config, io, stats, gemq3, factors, markets, charts, report）
+samples/             ライブラリの使い方の例
+docs/                マニュアルと計算方法
+tests/               テスト（uv run pytest）
+data/, output/, notebooks/   git 管理外
+```

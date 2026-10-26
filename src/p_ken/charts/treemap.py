@@ -1,18 +1,13 @@
-"""Treemap of universe stocks: cell area = weight, colour = period return.
+"""Treemap of stocks: cell area = weight, colour = period return.
 
-Adapted from plot_treemap in ../datastream (marketdata): stocks grouped by
-country (or sector), each group headed by its weight-weighted return and total
-weight, cells coloured on a diverging blue (+) / red (-) scale saturating at
-+-clip. Sized for the slide like the other charts.
-
-    from p_ken import treemap
-    stocks = treemap.load_stocks("gemq", "2026-07-01", "2026-09-30")
-    fig = treemap.plot_treemap(stocks, "country", title="MSCI EM Universe")
+Adapted from plot_treemap in ../datastream (marketdata). Stocks are grouped by
+one or more levels (e.g. country, sector, country > sector); every group is
+headed by its weight-weighted return (and, at the top level, its total weight)
+when the header fits. Cells use a diverging blue (+) / red (-) scale that
+saturates at +-clip; labels are sized to fit each cell.
 """
 
-import re
 from functools import cache
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,70 +18,17 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Rectangle
 from matplotlib.textpath import TextPath
 
-from p_ken import index_chart  # noqa: F401  (sets the Japanese font)
-from p_ken.index_chart import (
-    CM,
-    INK,
-    INK_MUTED,
-    NEGATIVE,
-    POSITIVE,
-)
+from p_ken.charts.style import CM, INK, INK_MUTED, NEGATIVE, POSITIVE, SLIDE_FULL_CM, SURFACE
 
-INDEX_DIR = Path("data/index_return")
-# Whole content area of a 4:3 template slide: 24.8 cm wide (1.36 cm margins),
-# from 2.8 cm below the title to just above the page number (~17.8 cm).
-SLIDE_FULL_CM = (24.8, 15.0)
-SURFACE = "#ffffff"
 NA_FILL = "#d6d6d1"
 MID = "#f0efec"  # diverging midpoint (neutral grey)
-CMAP = LinearSegmentedColormap.from_list(
-    "returns", ["#8e1b1b", NEGATIVE, MID, POSITIVE, "#123f7a"]
-)
-
-COUNTRY_SHORT = {
-    "Korea; Republic (S. Korea)": "Korea",
-    "United Arab Emirates": "UAE",
-    "United States of America": "USA",
-    "United Kingdom": "UK",
-    "Czech Republic": "Czechia",
-}
-_NAME_SUFFIXES = re.compile(
-    r"[,.]?\s+(Co\.?,?\s*Ltd\.?|Ltd\.?|Limited|Inc\.?|Corp\.?|Corporation|PLC|PJSC|SAB de CV|"
-    r"S\.?A\.?B?\.?|SA|AG|NV|Tbk PT|PT|Bhd|Berhad|PCL|Public Co|Holdings?|Group|Co)$",
-    re.IGNORECASE,
-)
-
-
-def short_name(name: str) -> str:
-    """Drop trailing company suffixes (Ltd, Corp, SA, ...) for cell labels."""
-    if not isinstance(name, str):
-        return ""
-    prev = None
-    while prev != name:
-        prev, name = name, _NAME_SUFFIXES.sub("", name).strip()
-    return name
-
-
-def load_stocks(
-    universe: str, start: str, end: str, index_dir: Path = INDEX_DIR
-) -> pd.DataFrame:
-    """Output of scripts/fetch_stock_returns.py, with tidy country names and labels."""
-    period = f"{start.replace('-', '')}_{end.replace('-', '')}"
-    df = pd.read_csv(
-        index_dir / f"stocks_{universe}_{period}.csv", dtype={"sedol": str}
-    )
-    df["country"] = df["country"].fillna("Other").replace(COUNTRY_SHORT)
-    df["sector"] = df["sector"].fillna("Other")
-    df["label"] = df["name"].map(short_name).where(df["name"].notna(), df["bid"])
-    return df
+CMAP = LinearSegmentedColormap.from_list("returns", ["#8e1b1b", NEGATIVE, MID, POSITIVE, "#123f7a"])
 
 
 @cache
 def _text_width(text: str, fs: float, bold: bool = False) -> float:
     """Width in pt of a single line, measured with the current font (cached)."""
-    prop = FontProperties(
-        family=plt.rcParams["font.family"], weight="bold" if bold else "normal"
-    )
+    prop = FontProperties(family=plt.rcParams["font.family"], weight="bold" if bold else "normal")
     return TextPath((0, 0), text, size=fs, prop=prop).get_extents().width
 
 
@@ -121,16 +63,10 @@ def _fit_label(name: str, value: str, w: float, h: float, fs_max: float, fs_min:
     fs = fs_max
     while fs >= fs_min:
         lines = _wrap(name, fs, w - 3) if name else None
-        if (
-            lines
-            and (len(lines) + 1) * fs * 1.15 <= h - 1
-            and _text_width(value, fs) <= w - 3
-        ):
+        if lines and (len(lines) + 1) * fs * 1.15 <= h - 1 and _text_width(value, fs) <= w - 3:
             return fs, "\n".join([*lines, value])
         fits = _text_width(value, fs) <= w - 3 and fs * 1.2 <= h - 1
-        if fits and (
-            fs <= fs_max - 1.5 or not name
-        ):  # prefer a smaller font with the name
+        if fits and (fs <= fs_max - 1.5 or not name):  # prefer a smaller font with the name
             return fs, value
         fs -= 0.5
     fs = fs_min
@@ -197,9 +133,7 @@ def plot_treemap(
 
     def draw_leaves(df, x, y, w, h):
         df = df.sort_values("weight", ascending=False)
-        for (_, row), c in zip(
-            df.iterrows(), rects(df.weight.tolist(), x, y, w, h), strict=True
-        ):
+        for (_, row), c in zip(df.iterrows(), rects(df.weight.tolist(), x, y, w, h), strict=True):
             v = row["return"]
             fill = CMAP(norm(v)) if pd.notna(v) else NA_FILL
             ax.add_patch(
@@ -255,9 +189,7 @@ def plot_treemap(
             options = [f"{name}  {ret}", f"{short}  {ret}", str(short)]
             if top:
                 options.insert(0, f"{name}  {ret} (w {sub.weight.sum():.1%})")
-            text = next(
-                (t for t in options if _text_width(t, fs, bold=top) < gw - 3), None
-            )
+            text = next((t for t in options if _text_width(t, fs, bold=top) < gw - 3), None)
             if text and gh > header_h * 2.2:
                 ax.text(
                     gx + 1.5,
@@ -282,9 +214,7 @@ def plot_treemap(
             fig.canvas.draw()
             x = t.get_window_extent().x1 / fig.bbox.width + 0.01
         if subtitle:
-            fig.text(
-                x, y, subtitle, va="center", fontsize=fontsize - 1, color=INK_MUTED
-            )
+            fig.text(x, y, subtitle, va="center", fontsize=fontsize - 1, color=INK_MUTED)
         steps = np.linspace(-clip, clip, 9)
         sw, sh = 0.022, (fontsize * 0.9) / (h_in * 72)
         lx = 1 - 0.005 - len(steps) * sw - 0.03

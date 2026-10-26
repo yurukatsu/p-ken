@@ -1,0 +1,10 @@
+# Report period. Edit these three dates each quarter; every script reads them
+# (command-line options still override them).
+
+[period]
+ytd_start = "2026-01-01"  # start of the year-to-date charts (index = 100, factor sum = 0)
+start = "2026-07-01"      # first day of the highlighted period (the quarter)
+end = "2026-09-30"        # last day of the highlighted period (= report date)
+
+[output]
+figures = "output/figures"  # PNG / CSV output folder (not tracked by git)
