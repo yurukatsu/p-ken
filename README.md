@@ -31,6 +31,10 @@ Scripts (`scripts/`):
 # Self-contained (PEP 723): uv installs lseg-data itself.
 # Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
 uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
+
+# Index chart rebased to 100 at --base, --highlight period drawn darker (red shades)
+# -> output/figures/index_<series>_<base>.png / .csv  (library: p_ken.index_chart.plot_rebased)
+uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-06-01 2026-09-30 --series world em rga
 ```
 
 Outputs:
