@@ -139,9 +139,25 @@ def _fit_label(name: str, value: str, w: float, h: float, fs_max: float, fs_min:
     return None, None
 
 
+SECTOR_SHORT = {
+    "Information Technology": "IT",
+    "Communication Services": "Comm. Svcs",
+    "Consumer Discretionary": "Cons. Disc.",
+    "Consumer Staples": "Cons. Staples",
+    "Health Care": "Health Care",
+    "Real Estate": "Real Estate",
+    "Financials": "Financials",
+    "Industrials": "Industrials",
+    "Materials": "Materials",
+    "Utilities": "Utilities",
+    "Energy": "Energy",
+}
+GROUP_BAND = "#f2f2f2"  # background of second-level groups
+
+
 def plot_treemap(
     stocks: pd.DataFrame,
-    group: str = "country",
+    groups: str | list[str] = "country",
     title: str | None = None,
     subtitle: str | None = None,
     clip: float = 0.2,
@@ -149,8 +165,15 @@ def plot_treemap(
     fontsize: float = 8,
     dpi: int = 300,
 ) -> plt.Figure:
-    """Treemap grouped by `group` ("country" or "sector"); area = weight, colour = return."""
+    """Treemap grouped by `groups` (e.g. "country", "sector", ["country", "sector"]).
+
+    Area = weight, colour = return. Each group is headed (when it fits) by its
+    weight-weighted return, and top-level groups also by their total weight.
+    """
+    groups = [groups] if isinstance(groups, str) else list(groups)
     data = stocks[stocks["weight"] > 0].copy()
+    for g in groups:
+        data[g] = data[g].fillna("Other")
     norm = Normalize(-clip, clip)
     w_in, h_in = size_cm[0] * CM, size_cm[1] * CM
     fig = plt.figure(figsize=(w_in, h_in), dpi=dpi)
@@ -172,48 +195,10 @@ def plot_treemap(
         v = df.dropna(subset=["return"])
         return (v.weight * v["return"]).sum() / v.weight.sum() if len(v) else np.nan
 
-    sizes = data.groupby(group).weight.sum().sort_values(ascending=False)
-    header_h, pad = fontsize * 1.6, 1.0
-    for name, r in zip(sizes.index, rects(sizes.tolist(), 0, 0, W, H), strict=True):
-        sub = data[data[group] == name].sort_values("weight", ascending=False)
-        gx, gy, gw, gh = (
-            r["x"] + pad,
-            r["y"] + pad,
-            r["dx"] - 2 * pad,
-            r["dy"] - 2 * pad,
-        )
-        ax.add_patch(
-            Rectangle(
-                (r["x"], r["y"]),
-                r["dx"],
-                r["dy"],
-                facecolor=SURFACE,
-                edgecolor=INK_MUTED,
-                lw=0.8,
-            )
-        )
-        ret = weighted(sub)
-        options = [
-            f"{name}  {ret:+.1%} (w {sub.weight.sum():.1%})",
-            f"{name}  {ret:+.1%}",
-            str(name),
-        ]
-        text = next(
-            (t for t in options if _text_width(t, fontsize, bold=True) < gw - 3), None
-        )
-        if text and gh > header_h * 2.2:
-            ax.text(
-                gx + 1.5,
-                gy + header_h / 2,
-                text,
-                va="center",
-                fontsize=fontsize,
-                fontweight="bold",
-                color=INK,
-            )
-            gy, gh = gy + header_h, gh - header_h
+    def draw_leaves(df, x, y, w, h):
+        df = df.sort_values("weight", ascending=False)
         for (_, row), c in zip(
-            sub.iterrows(), rects(sub.weight.tolist(), gx, gy, gw, gh), strict=True
+            df.iterrows(), rects(df.weight.tolist(), x, y, w, h), strict=True
         ):
             v = row["return"]
             fill = CMAP(norm(v)) if pd.notna(v) else NA_FILL
@@ -242,6 +227,51 @@ def plot_treemap(
                     linespacing=1.1,
                     color=_ink_for(fill),
                 )
+
+    def draw_level(df, level, x, y, w, h):
+        if level == len(groups):
+            draw_leaves(df, x, y, w, h)
+            return
+        col, top = groups[level], level == 0
+        fs = fontsize if top else fontsize - 1
+        header_h, pad = (fs * 1.6, 1.0) if top else (fs * 1.45, 0.8)
+        sizes = df.groupby(col).weight.sum().sort_values(ascending=False)
+        for name, r in zip(sizes.index, rects(sizes.tolist(), x, y, w, h), strict=True):
+            sub = df[df[col] == name]
+            gx, gy = r["x"] + pad, r["y"] + pad
+            gw, gh = r["dx"] - 2 * pad, r["dy"] - 2 * pad
+            ax.add_patch(
+                Rectangle(
+                    (r["x"], r["y"]),
+                    r["dx"],
+                    r["dy"],
+                    facecolor=SURFACE if top else GROUP_BAND,
+                    edgecolor=INK_MUTED if top else "#c8c8c8",
+                    lw=0.8 if top else 0.5,
+                )
+            )
+            ret = f"{weighted(sub):+.1%}".replace("-", "−")
+            short = SECTOR_SHORT.get(name, name) if col == "sector" else name
+            options = [f"{name}  {ret}", f"{short}  {ret}", str(short)]
+            if top:
+                options.insert(0, f"{name}  {ret} (w {sub.weight.sum():.1%})")
+            text = next(
+                (t for t in options if _text_width(t, fs, bold=top) < gw - 3), None
+            )
+            if text and gh > header_h * 2.2:
+                ax.text(
+                    gx + 1.5,
+                    gy + header_h / 2,
+                    text,
+                    va="center",
+                    fontsize=fs,
+                    fontweight="bold" if top else "normal",
+                    color=INK,
+                )
+                gy, gh = gy + header_h, gh - header_h
+            draw_level(sub, level + 1, gx, gy, gw, gh)
+
+    draw_level(data, 0, 0, 0, W, H)
 
     # header row: title / subtitle on the left, colour scale on the right
     if title or subtitle:

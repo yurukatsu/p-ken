@@ -5,7 +5,9 @@ scripts/fetch_stock_returns.py (weights + LSEG returns). Run from the p-ken root
 
     uv run scripts/fetch_stock_returns.py          # once (LSEG)
     uv run python scripts/plot_treemap.py
-    uv run python scripts/plot_treemap.py --group sector --clip 0.3
+    uv run python scripts/plot_treemap.py --groups sector --clip 0.3
+
+By default three groupings per universe: country, GICS sector, country > sector.
 
 Each PNG is rendered at its size on the slide (default 24.8 x 15.0 cm: a whole
 content slide of the 4:3 template; 300 dpi), so paste it unscaled.
@@ -19,6 +21,11 @@ import pandas as pd
 from p_ken import treemap
 
 TITLES = {"gemq": "MSCI EM Universe", "blf": "RGA Universe"}
+GROUPINGS = {
+    "country": ["country"],
+    "sector": ["sector"],
+    "country_sector": ["country", "sector"],
+}
 
 
 def main() -> None:
@@ -28,7 +35,13 @@ def main() -> None:
     )
     parser.add_argument("--start", default="2026-07-01")
     parser.add_argument("--end", default="2026-09-30")
-    parser.add_argument("--group", choices=["country", "sector"], default="country")
+    parser.add_argument(
+        "--groups",
+        nargs="+",
+        choices=list(GROUPINGS),
+        default=list(GROUPINGS),
+        help="country, sector (GICS) and/or country_sector (country > sector)",
+    )
     parser.add_argument(
         "--clip", type=float, default=0.2, help="colour saturates at +-clip"
     )
@@ -46,7 +59,7 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     base = pd.Timestamp(args.start) - pd.Timedelta(days=1)
     end = pd.Timestamp(args.end)
-    for u in args.universes:
+    for u, grouping in [(u, g) for u in args.universes for g in args.groups]:
         stocks = treemap.load_stocks(u, args.start, args.end)
         base_date = pd.to_datetime(stocks["base_date"]).min()
         subtitle = (
@@ -55,7 +68,7 @@ def main() -> None:
         )
         fig = treemap.plot_treemap(
             stocks,
-            args.group,
+            GROUPINGS[grouping],
             title=TITLES[u],
             subtitle=subtitle,
             clip=args.clip,
@@ -63,7 +76,7 @@ def main() -> None:
             fontsize=args.fontsize,
         )
         period = f"{args.start.replace('-', '')}_{args.end.replace('-', '')}"
-        path = args.out_dir / f"treemap_{u}_{args.group}_{period}.png"
+        path = args.out_dir / f"treemap_{u}_{grouping}_{period}.png"
         fig.savefig(path)
         print(f"Saved: {path}")
 
