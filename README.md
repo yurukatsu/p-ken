@@ -22,6 +22,14 @@ To run factor returns with a different universe or exposures, see
 [`samples/`](samples/README.md) (`p_ken.fret.run()`). `notebooks/` is for local
 work and is not tracked.
 
+Scripts (`scripts/`):
+
+```sh
+# MSCI EM / ACWI / World daily levels (USD; price, net, gross) from LSEG,
+# using LSEGClient of the sibling ../datastream project -> data/index_return/msci.csv
+uv run --project ../datastream python scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD]
+```
+
 Outputs:
 
 - `data/gemq/exposures/nam/gemq3/{ym}.csv` — universe with `ai`, `airev`, `Gousei_3Factor`
