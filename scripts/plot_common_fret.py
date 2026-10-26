@@ -29,7 +29,11 @@ def main() -> None:
     parser.add_argument(
         "--start", default="2026-01-01", help="cumulative sum starts at 0 here"
     )
-    parser.add_argument("--end", default=None, help="last date (default: latest data)")
+    parser.add_argument(
+        "--end",
+        default=None,
+        help="last date (default: highlight end, else latest data)",
+    )
     parser.add_argument(
         "--highlight",
         nargs=2,
@@ -49,6 +53,7 @@ def main() -> None:
     args = parser.parse_args()
 
     highlight = None if args.no_highlight else tuple(args.highlight)
+    end = args.end or (highlight[1] if highlight else None)
     # same colour for the same type in every chart
     all_types = {}
     for u in common_fret.UNIVERSES:
@@ -58,7 +63,7 @@ def main() -> None:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for u in args.universes:
-        daily = common_fret.factor_returns(u, args.start, args.end)
+        daily = common_fret.factor_returns(u, args.start, end)
         by_type = common_fret.type_returns(daily, u)
         fig = common_fret.plot_cumulative(
             by_type,
