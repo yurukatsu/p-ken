@@ -53,6 +53,11 @@ uv run python scripts/plot_period_returns.py --start 2026-07-01 --end 2026-09-30
 # cumulative sum from 0, highlight period in full colour  (library: p_ken.common_fret)
 # -> output/figures/common_fret_<universe>_<start>.png / _factors.csv / _types.csv
 uv run python scripts/plot_common_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30  # ret and sret (_sret)
+
+# NAM factor returns on the RGA universe (data/blf): AI, TVL, RVL, ai70_bd30 from the daily
+# score files (latest file before each return date), same method / chart style
+# -> output/figures/nam_fret_blf_<start>[_sret].png / .csv  (library: p_ken.nam_fret)
+uv run python scripts/plot_nam_fret.py --start 2026-01-01 --highlight 2026-07-01 2026-09-30
 ```
 
 Outputs:
