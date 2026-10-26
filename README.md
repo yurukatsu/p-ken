@@ -32,7 +32,7 @@ Scripts (`scripts/`):
 # Credentials LSEG_APP_KEY / LSEG_USERNAME / LSEG_PASSWORD from env or --env-file (default .env)
 uv run scripts/fetch_msci_index.py [--start 1999-01-01] [--end YYYY-MM-DD] [--indices EM ACWI World] [--env-file ../datastream/.env]
 
-# EM country indices (16; Korea = KOSPI) and MSCI EM sectors (price; --sector-variant net)
+# EM country indices (15; Korea = KOSPI, no Poland) and MSCI EM sectors (price; --sector-variant net)
 # in USD from LSEG -> data/index_return/{country,em_sector}_{close,return}_usd.csv
 uv run scripts/fetch_em_markets.py [--start 1999-01-01] [--groups country em_sector] [--env-file ../datastream/.env]
 

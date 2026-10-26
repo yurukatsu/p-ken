@@ -8,7 +8,7 @@
 """Fetch daily USD index levels for EM countries and MSCI EM sectors from LSEG.
 
 Universe follows ../datastream/configs/universe.yaml (countries, sectors), with
-Korea = KOSPI (.KS11) instead of KOSPI 100. Self-contained (PEP 723). Run from
+Korea = KOSPI (.KS11) instead of KOSPI 100 and without Poland. Self-contained (PEP 723). Run from
 the p-ken root:
 
     uv run scripts/fetch_em_markets.py
@@ -55,7 +55,6 @@ COUNTRIES = {
     ".JALSH": "South Africa",
     ".MXX": "Mexico",
     ".BVSP": "Brazil",
-    ".WIG": "Poland",
 }
 
 # MSCI EM sector code -> column name; RIC = .MIEF{code}{P|N}US
