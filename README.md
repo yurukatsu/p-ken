@@ -7,7 +7,7 @@ Input data lives in `data/GEMQ` (not tracked): `unv`, `rtn`, `scores/{ai,revisio
 
 ```sh
 uv run p-ken all                          # build GEMQ3 and factor returns
-uv run p-ken gemq3 --qip-rescale ratio    # choose the rescale_mean() variant
+uv run p-ken gemq3 --qip-na-strict        # reproduce R NA handling in rescale_mean()
 uv run p-ken fret
 ```
 
@@ -22,5 +22,6 @@ Outputs:
 - `data/GEMQ/fret/regression_daily.csv` — daily cross-sectional OLS slope per factor
 - `data/GEMQ/fret/*_summary.csv` — annualized return / risk / RR
 
-Note: `rescale_mean()` is not defined in the R library. The candidates are in
-`src/p_ken/gemq3.py` (`RESCALE_METHODS`); the default `blom_shift` is provisional.
+Note: `rescale_mean()` (QIP) ignores missing `invention_count_12m` when taking
+the mean. The R version does not (`mean()` without `na.rm`), so one missing value
+sets QIP to 0 for every stock; `--qip-na-strict` reproduces that.

@@ -10,7 +10,6 @@ Steps for month ym:
   5. join to the universe; missing scores become 0
 """
 
-from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -27,47 +26,22 @@ def calc_blom_score(x: pd.Series, alpha: float = 0.375) -> pd.Series:
     return pd.Series(norm.ppf(rk_normed), index=x.index)
 
 
-# --- rescale_mean -----------------------------------------------------------
-# rescale_mean() is not defined in msci_lib.R.r, so the exact R logic is
-# unknown. Each candidate below returns a series whose mean (over non-missing
-# values) equals `target`. Select one with `qip_rescale=` / `--qip-rescale`,
-# or add the confirmed version here and change DEFAULT_QIP_RESCALE.
+def rescale_mean(x: pd.Series, mu: float, na_rm: bool = True) -> pd.Series:
+    """Port of rescale_mean() (R): blom score shifted so its mean equals mu.
 
-
-def _rescale_blom_shift(x: pd.Series, target: float) -> pd.Series:
-    """Blom score, then shift so the mean equals target."""
-    b = calc_blom_score(x)
-    return b - b.mean() + target
-
-
-def _rescale_zscore_shift(x: pd.Series, target: float) -> pd.Series:
-    """Z-score (sample sd, like R scale()), then shift so the mean equals target."""
-    return (x - x.mean()) / x.std() + target
-
-
-def _rescale_ratio(x: pd.Series, target: float) -> pd.Series:
-    """Multiply so the mean equals target: x / mean(x) * target."""
-    return x / x.mean() * target
-
-
-RESCALE_METHODS: dict[str, Callable[[pd.Series, float], pd.Series]] = {
-    "blom_shift": _rescale_blom_shift,
-    "zscore_shift": _rescale_zscore_shift,
-    "ratio": _rescale_ratio,
-}
-DEFAULT_QIP_RESCALE = "blom_shift"  # provisional until the R definition is confirmed
-
-
-def rescale_mean(x: pd.Series, target: float, method: str = DEFAULT_QIP_RESCALE):
-    return RESCALE_METHODS[method](x, target)
-
-
-# ----------------------------------------------------------------------------
+    R uses mean(x_scaled) without na.rm, so one missing value makes every
+    result NA (QIP then becomes 0 for all stocks). na_rm=True (default)
+    ignores missing values instead; na_rm=False reproduces the R behavior.
+    """
+    x_scaled = calc_blom_score(x)
+    if not na_rm and x_scaled.isna().any():
+        return pd.Series(np.nan, index=x.index)
+    return x_scaled + (mu - x_scaled.mean())
 
 
 def build_gemq3(
     ym: str,
-    qip_rescale: str = DEFAULT_QIP_RESCALE,
+    qip_na_rm: bool = True,
     data_dir: Path = io.DATA_DIR,
 ) -> pd.DataFrame:
     """Return the universe with ai, airev and Gousei_3Factor columns."""
@@ -86,7 +60,7 @@ def build_gemq3(
     msd = airev.loc[airev.index.isin(chai_bid), "airev"].mean()
 
     # QIP adjustment
-    qip = rescale_mean(qip_raw, msd, qip_rescale).rename("qip")
+    qip = rescale_mean(qip_raw, msd, qip_na_rm).rename("qip")
 
     # 3-factor
     s = pd.concat([ai, qip, rev], axis=1).fillna(0.0)
@@ -105,7 +79,7 @@ def build_gemq3(
 
 
 def build_all(
-    qip_rescale: str = DEFAULT_QIP_RESCALE,
+    qip_na_rm: bool = True,
     data_dir: Path = io.DATA_DIR,
     out_dir: Path | None = None,
 ) -> list[str]:
@@ -121,8 +95,6 @@ def build_all(
     for ym in io.list_yms("unv", data_dir):
         if ym not in have or io.load_unv(ym, data_dir).empty:
             continue
-        build_gemq3(ym, qip_rescale, data_dir).to_csv(
-            out_dir / f"{ym}.csv", index=False
-        )
+        build_gemq3(ym, qip_na_rm, data_dir).to_csv(out_dir / f"{ym}.csv", index=False)
         done.append(ym)
     return done
