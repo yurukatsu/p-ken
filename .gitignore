@@ -16,3 +16,6 @@ notebooks/
 *.zip
 .env
 output/
+
+# Lock file (not tracked)
+uv.lock

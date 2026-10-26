@@ -36,7 +36,7 @@ uv run python scripts/make_figures.py                         # 4. 全部の図 
 config/report.toml   レポートの期間
 scripts/             実行するスクリプト（fetch_lseg.py, build_gemq3.py, plot_*.py, make_figures.py）
 src/p_ken/           ライブラリ（config, io, stats, gemq3, factors, markets, charts, report）
-samples/             ライブラリの使い方の例
+samples/             使い方の例（実行済みノートブック）
 docs/                マニュアルと計算方法
 tests/               テスト（uv run pytest）
 data/, output/, notebooks/   git 管理外

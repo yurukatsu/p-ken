@@ -69,7 +69,7 @@ p-ken/
 │   └── template/          PowerPoint テンプレート（git 管理外）
 ├── scripts/               実行するスクリプト
 ├── src/p_ken/             計算・作図のライブラリ
-├── samples/               ライブラリの使い方の例
+├── samples/               使い方の例（実行済みノートブック）
 ├── notebooks/             手元での分析用（git 管理外）
 ├── docs/                  このマニュアルと計算方法
 └── tests/                 テスト
@@ -323,12 +323,14 @@ daily = factors.regression_returns("gemq", factors.monthly(my_factor), "2026-01-
 
 分位版は `factors.quantile_returns(..., q=5, group=5 or "spread", breakpoints="formation" or "pooled")` です。
 
+サンプルは実行済みのノートブックです（出力つきで保存しているので、開くだけで結果を確認できます）。
+
 | サンプル | 内容 |
 |---|---|
-| `samples/01_default.py` | デフォルト（MSCI EM の NAM、ret / sret）と年率の集計 |
-| `samples/02_custom_universe.py` | 中国のみ・時価上位 300・中国除く |
-| `samples/03_custom_exposure.py` | 自作ファクター、10 分位、パネル形式 |
-| `samples/04_core_exposure.py` | core ファクターの一部と、Value の合成 |
+| `samples/01_default.ipynb` | デフォルト（MSCI EM の NAM）、四半期合計、年率の集計、グラフ、sret 版、Q5 版、RGA |
+| `samples/02_custom_universe.ipynb` | `stocks=` でユニバースを絞る：中国のみ・ウェイト上位 300・中国除く |
+| `samples/03_custom_exposure.ipynb` | 自作ファクター（月ごとの関数 / パネル形式）、標準化の比較、10 分位 |
+| `samples/04_core_exposure.ipynb` | core ファクターの一覧、一部の計算、タイプ平均、Value の合成 |
 
 ## 8. 困ったとき
 
