@@ -42,6 +42,11 @@ uv run scripts/fetch_em_markets.py [--start 1999-01-01] [--groups country em_sec
 # highlight-period return (plus blue / minus red) above or below each line end
 # -> output/figures/index_<series>_<base>.png / .csv  (library: p_ken.index_chart.plot_rebased)
 uv run python scripts/plot_index_ytd.py --base 2026-01-01 --highlight 2026-07-01 2026-09-30 --series world em rga
+
+# Period return bars for countries / MSCI EM sectors (USD): bar = start -> end,
+# markers = month-end cumulative returns; quarter-slide size (12.2 x 7.4 cm)
+# -> output/figures/period_returns_<group>_<start>_<end>.png / .csv  (library: p_ken.return_bars)
+uv run python scripts/plot_period_returns.py --start 2026-07-01 --end 2026-09-30
 ```
 
 Outputs:
