@@ -173,8 +173,8 @@ def plot_period_bars(
     ax.tick_params(axis="y", colors=INK, labelsize=fontsize, length=0, pad=2)
 
     base_date = close.index[close.index < pd.Timestamp(start)].max()
-    ax.set_title(
-        f"Return (USD basis) vs. {base_date:%-m/%-d}",
+    title = ax.set_title(
+        f"Cumulative Return from {base_date:%-m/%-d} (USD)",
         loc="left",
         fontsize=fontsize,
         color=INK,
@@ -207,6 +207,13 @@ def plot_period_bars(
         borderaxespad=0,
         handler_map={tuple: HandlerTuple(ndivide=None, pad=0)},
     )
+
+    # start the title at the figure's left edge (above the market names) so it
+    # does not run into the legend; the legend row already reserves the height
+    title.set_in_layout(False)
+    fig.canvas.draw()
+    left_px = fig.bbox.x0 + 2 * fig.dpi / 72
+    title.set_x((left_px - ax.bbox.x0) / ax.bbox.width)
 
     out = table.iloc[::-1].copy()  # top -> bottom as drawn
     out.columns = [f"{c:%Y-%m-%d}" for c in out.columns]
