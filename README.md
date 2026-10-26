@@ -11,6 +11,10 @@ uv run p-ken gemq3 --qip-rescale ratio    # choose the rescale_mean() variant
 uv run p-ken fret
 ```
 
+To run factor returns with a different universe or exposures, see
+[`samples/`](samples/README.md) (`p_ken.fret.run()`). `notebooks/` is for local
+work and is not tracked.
+
 Outputs:
 
 - `data/GEMQ/scores/gemq3/{ym}.csv` — universe with `ai`, `airev`, `Gousei_3Factor`

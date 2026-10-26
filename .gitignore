@@ -12,3 +12,4 @@ wheels/
 # Local data / reference code (not tracked)
 archive/
 data/
+notebooks/

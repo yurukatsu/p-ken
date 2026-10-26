@@ -23,5 +23,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.4.0",
     "ruff>=0.17.2",
 ]
