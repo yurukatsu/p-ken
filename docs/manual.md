@@ -124,7 +124,7 @@ uv run scripts/fetch_lseg.py --env-file ../datastream/.env all
 
 `fetch_lseg.py` は他のスクリプトと違い、`uv run scripts/...` で実行します（必要なライブラリを uv が別環境に入れます）。
 
-RGA 指数（`data/index_return/rga.csv`）は LSEG からは取らないので、別途最新のものを置いてください。
+RGA 指数（`data/index_return/rga.csv`、トータルリターン）は LSEG からは取らないので、別途最新のものを置いてください。
 
 ### ⑤ 図を作る
 
@@ -273,7 +273,7 @@ RGA のみ：
 | `msci_{em,acwi,world}.csv` | `fetch_lseg.py indices` |
 | `{country,em_sector}_{close,return}_usd.csv` | `fetch_lseg.py markets` |
 | `stocks_{gemq,blf}_<period>.csv` | `fetch_lseg.py stocks` |
-| `rga.csv` | 別途（`dateymd`, `close`, `return`） |
+| `rga.csv` | 別途。トータルリターン（`dateymd`, `close`, `return`） |
 
 ## 7. Python から使う
 

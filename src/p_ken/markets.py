@@ -24,7 +24,7 @@ INDEX_SERIES = {
     "world": IndexSeries("msci_world", "MSCI World Index", "MSCIWO"),
     "em": IndexSeries("msci_em", "MSCI Emerging Markets Index", "MSCIEM"),
     "acwi": IndexSeries("msci_acwi", "MSCI ACWI Index", "MSCIACWI"),
-    "rga": IndexSeries("rga", "RGA Index", "RGA", column="close"),
+    "rga": IndexSeries("rga", "RGA Index", "RGA", column="close"),  # total return level
 }
 # MSCI variant -> y-axis title
 VARIANT_LABEL = {"close": "Price Return", "net": "Net Return", "gross": "Gross Return"}
