@@ -1,7 +1,7 @@
 """Index line chart: MSCI World / EM / RGA rebased to 100, the quarter highlighted.
 
     uv run python scripts/plot_index_ytd.py
-    uv run python scripts/plot_index_ytd.py --series acwi em --variant net
+    uv run python scripts/plot_index_ytd.py --series acwi em --variant close
 
 Output: index_<series>_<ytd_start>.png / .csv (24.8 x 7.4 cm = half slide).
 """
@@ -20,9 +20,9 @@ def main() -> None:
     )
     p.add_argument(
         "--variant",
-        default="close",
+        default="net",
         choices=list(markets.VARIANT_LABEL),
-        help="MSCI series: close = price index, net / gross = total return",
+        help="MSCI series: net (default) / gross = total return, close = price index",
     )
     p.add_argument("--size-cm", nargs=2, type=float, metavar=("W", "H"))
     p.add_argument("--fontsize", type=float, default=9)

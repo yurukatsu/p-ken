@@ -217,7 +217,7 @@ $$
 R = \frac{P_{t_e}}{P_{t_s^-}} - 1, \qquad t_s^- = \max\{t < t_s\}
 $$
 
-- **指数の推移**（MSCI World / EM / RGA）：$100 \times P_t / P_b$、$b$ は `ytd_start` 以前の最後の日。MSCI は価格指数（`--variant net` で配当込み）。
+- **指数の推移**（MSCI World / EM / RGA）：$100 \times P_t / P_b$、$b$ は `ytd_start` 以前の最後の日。MSCI はネット・トータルリターン（配当込み、RGA に合わせる。`--variant close` で価格指数）。
 - **国別・セクター別**：LSEG の USD 建て終値（`TR.PriceClose(Curn=USD)`、現地指数をその日の為替で換算）。マーカーは月末までの累積リターン（同じ基準）。
 - **ツリーマップ**：セルの面積 = 期末のウェイト $w_i$、色 = 銘柄の USD 建て期間リターン $R_i$。グループの見出しは
   $\sum_{i \in G} w_i R_i \big/ \sum_{i \in G} w_i$。

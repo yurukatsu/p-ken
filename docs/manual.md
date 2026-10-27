@@ -163,13 +163,13 @@ uv run pytest
 
 ```sh
 uv run python scripts/plot_index_ytd.py
-uv run python scripts/plot_index_ytd.py --variant net     # 配当込み（ネット）
+uv run python scripts/plot_index_ytd.py --variant close   # 価格指数
 uv run python scripts/plot_index_ytd.py --series acwi em   # 指数を変える
 ```
 
 - MSCI World・MSCI EM・RGA を `ytd_start` = 100 に指数化。四半期は濃い色、それ以外は薄い色。
 - 線の右端に略称（MSCIWO / MSCIEM / RGA）と **四半期のリターン**（プラス青・マイナス赤）を、線と重ならない上下の位置に表示します。
-- MSCI は価格指数（`--variant net` / `gross` で配当込み。y 軸のタイトルも変わります）。
+- MSCI は配当込みのネット・トータルリターン（RGA に合わせる）。`--variant gross` でグロス、`close` で価格指数（y 軸のタイトルも変わります）。
 - 出力：`index_world_em_rga_<ytd>.png` / `.csv`（指数化した値）
 
 ### 4.2 国別・セクター別の四半期リターン
