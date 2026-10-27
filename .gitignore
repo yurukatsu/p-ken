@@ -19,3 +19,6 @@ output/
 
 # Lock file (not tracked)
 uv.lock
+
+# Editor settings (not tracked)
+.vscode/
