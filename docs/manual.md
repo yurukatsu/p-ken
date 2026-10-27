@@ -124,7 +124,7 @@ uv run scripts/fetch_lseg.py --env-file ../datastream/.env all
 
 `fetch_lseg.py` は他のスクリプトと違い、`uv run scripts/...` で実行します（必要なライブラリを uv が別環境に入れます）。
 
-RGA 指数（`data/index_return/rga.csv`、トータルリターン）は LSEG からは取らないので、別途最新のものを置いてください。
+RGA 指数（`data/index_return/rga.csv`、グロス・トータルリターン）は LSEG からは取らないので、別途最新のものを置いてください。
 
 ### ⑤ 図を作る
 
@@ -169,7 +169,7 @@ uv run python scripts/plot_index_ytd.py --series acwi em   # 指数を変える
 
 - MSCI World・MSCI EM・RGA を `ytd_start` = 100 に指数化。四半期は濃い色、それ以外は薄い色。
 - 線の右端に略称（MSCIWO / MSCIEM / RGA）と **四半期のリターン**（プラス青・マイナス赤）を、線と重ならない上下の位置に表示します。
-- MSCI は配当込みのネット・トータルリターン（RGA に合わせる）。`--variant gross` でグロス、`close` で価格指数（y 軸のタイトルも変わります）。
+- MSCI はグロス・トータルリターン（RGA に合わせる）。`--variant net` でネット、`close` で価格指数（y 軸のタイトルも変わります）。
 - 出力：`index_world_em_rga_<ytd>.png` / `.csv`（指数化した値）
 
 ### 4.2 国別・セクター別の四半期リターン
@@ -273,7 +273,7 @@ RGA のみ：
 | `msci_{em,acwi,world}.csv` | `fetch_lseg.py indices` |
 | `{country,em_sector}_{close,return}_usd.csv` | `fetch_lseg.py markets` |
 | `stocks_{gemq,blf}_<period>.csv` | `fetch_lseg.py stocks` |
-| `rga.csv` | 別途。トータルリターン（`dateymd`, `close`, `return`） |
+| `rga.csv` | 別途。グロス・トータルリターン（`dateymd`, `close`, `return`） |
 
 ## 7. Python から使う
 

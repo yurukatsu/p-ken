@@ -58,7 +58,7 @@ def _ymd(date: str) -> str:
 def index_chart(
     period: Period,
     series: tuple[str, ...] = ("world", "em", "rga"),
-    variant: str = "net",
+    variant: str = "gross",
     out_dir: Path | None = None,
     size_cm=SLIDE_HALF_CM,
     fontsize: float = 9,
