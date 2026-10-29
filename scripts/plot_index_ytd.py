@@ -20,9 +20,9 @@ def main() -> None:
     )
     p.add_argument(
         "--variant",
-        default="gross",
+        default="net",
         choices=list(markets.VARIANT_LABEL),
-        help="MSCI series: gross (default, as RGA) / net = total return, close = price index",
+        help="MSCI series: net (default) / gross = total return, close = price index",
     )
     p.add_argument("--size-cm", nargs=2, type=float, metavar=("W", "H"))
     p.add_argument("--fontsize", type=float, default=9)

@@ -169,7 +169,7 @@ uv run python scripts/plot_index_ytd.py --series acwi em   # 指数を変える
 
 - MSCI World・MSCI EM・RGA を `ytd_start` = 100 に指数化。四半期は濃い色、それ以外は薄い色。
 - 線の右端に略称（MSCIWO / MSCIEM / RGA）と **四半期のリターン**（プラス青・マイナス赤）を、線と重ならない上下の位置に表示します。
-- MSCI はグロス・トータルリターン（RGA に合わせる）。`--variant net` でネット、`close` で価格指数（y 軸のタイトルも変わります）。
+- MSCI はネット・トータルリターン。`--variant gross` でグロス、`close` で価格指数（y 軸のタイトルも変わります）。RGA は `rga.csv` のまま（グロス）。
 - 出力：`index_world_em_rga_<ytd>.png` / `.csv`（指数化した値）
 
 ### 4.2 国別・セクター別の四半期リターン
